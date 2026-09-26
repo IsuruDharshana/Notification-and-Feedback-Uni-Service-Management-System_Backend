@@ -11,6 +11,7 @@ documented APIs and identifiers; they must not read this database directly.
 - `POST /api/notifications/trigger` with `X-Service-Key`, for example from event-service when an event is cancelled.
 - `POST /api/announcements`, `POST /api/announcements/{id}/publish`, and `GET /api/announcements` with a user JWT.
 - `POST /api/feedback/forms`, `GET /api/feedback/forms`, and `POST /api/feedback/forms/{formId}/responses` with a user JWT.
+- `GET /api/engagement-dashboard/summary` with a user JWT.
 
 The trigger contract is `{ "recipientId": "uuid", "message": "Your event has been cancelled.", "relatedType": "EVENT", "relatedId": "uuid" }`.
 
@@ -40,13 +41,17 @@ microservices.
 
 ## Run
 
-Set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `NOTIFICATION_SERVICE_KEY`, `USER_DIRECTORY_BASE_URL`, `FACILITY_DIRECTORY_BASE_URL` and `GROUP7_FEEDBACK_BASE_URL`, then run `mvn spring-boot:run`. Flyway creates the schema.
+Set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `NOTIFICATION_SERVICE_KEY`, `USER_DIRECTORY_BASE_URL`, `FACILITY_DIRECTORY_BASE_URL` and `GROUP7_FEEDBACK_BASE_URL`, then run `mvn spring-boot:run`. Flyway creates the schema. The application intentionally has no development fallback for database credentials, JWT signing secrets, or the service key.
 
 The notification trigger validates `recipientId` through the Group 5 user directory; it does not read the Group 5 database directly. By default it calls `GET {USER_DIRECTORY_BASE_URL}/api/users/{userId}`. Set `USER_DIRECTORY_USER_PATH` if Group 5 agrees on a different path. A missing recipient returns `404 NOTIFICATION_RECIPIENT_NOT_FOUND`; an unconfigured or unavailable directory returns `503`.
 
 The Group 6 venue seam calls `GET {FACILITY_DIRECTORY_BASE_URL}/api/facilities/{venueId}` by default. The Group 7 feedback seam calls `GET {GROUP7_FEEDBACK_BASE_URL}/api/feedback-eligibility/{activityType}/{activityId}?userId={userId}` and expects `{ "eligible": true|false }`. Override the paths with `FACILITY_DIRECTORY_VENUE_PATH` and `GROUP7_FEEDBACK_ELIGIBILITY_PATH` when the provider contracts are finalized.
 
+The engagement summary reports communication-feedback-owned metrics. Event participation is explicitly marked unavailable until the event/registration service supplies that data; it is not represented as a misleading zero.
+
 ## Verification
 
 Run `mvn -s .mvn-settings.xml test` locally. GitHub Actions runs the same test
 command for pushes to `main`/`master` and for pull requests.
+
+Build the deployment image with `docker build -t communication-feedback-service .`. The image runs as a non-root user and exposes port `8082`; provide all required environment variables at runtime.

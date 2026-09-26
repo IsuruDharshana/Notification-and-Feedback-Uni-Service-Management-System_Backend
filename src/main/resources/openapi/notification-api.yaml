@@ -306,6 +306,22 @@ paths:
         '503':
           description: Group 7 feedback-eligibility service is unavailable or returned an invalid response.
 
+  /api/engagement-dashboard/summary:
+    get:
+      summary: Get communication and feedback engagement summary
+      operationId: getEngagementSummary
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Summary metrics owned by the communication-feedback service.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EngagementSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -530,6 +546,7 @@ components:
         - id
         - activityType
         - activityId
+        - createdBy
         - title
         - questionsJson
         - active
@@ -543,6 +560,9 @@ components:
           type: string
           enum: [EVENT, SERVICE_REQUEST]
         activityId:
+          type: string
+          format: uuid
+        createdBy:
           type: string
           format: uuid
         title:
@@ -601,3 +621,35 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    EngagementSummary:
+      type: object
+      required:
+        - publishedAnnouncementCount
+        - activeFeedbackFormCount
+        - feedbackResponseCount
+        - notificationCount
+        - eventParticipationAvailable
+      properties:
+        publishedAnnouncementCount:
+          type: integer
+          format: int64
+        activeFeedbackFormCount:
+          type: integer
+          format: int64
+        feedbackResponseCount:
+          type: integer
+          format: int64
+        averageFeedbackRating:
+          type: number
+          format: double
+          nullable: true
+        notificationCount:
+          type: integer
+          format: int64
+        eventParticipationCount:
+          type: integer
+          format: int64
+          nullable: true
+        eventParticipationAvailable:
+          type: boolean

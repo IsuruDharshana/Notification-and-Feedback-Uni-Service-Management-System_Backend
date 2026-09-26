@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface AnnouncementRepository extends JpaRepository<Announcement, UUID> {
     List<Announcement> findByStatusOrderByPublishedAtDesc(AnnouncementStatus status);
+    long countByStatus(AnnouncementStatus status);
 }

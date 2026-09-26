@@ -30,7 +30,7 @@ class FeedbackServiceTest {
         when(formRepository.save(any(FeedbackForm.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         FeedbackDtos.FormResponse result = service.createForm(new FeedbackDtos.CreateFormRequest(
-                FeedbackActivityType.EVENT, UUID.randomUUID(), "Event feedback", "[{\"type\":\"rating\"}]"));
+                FeedbackActivityType.EVENT, UUID.randomUUID(), "Event feedback", "[{\"type\":\"rating\"}]"), UUID.randomUUID());
 
         assertEquals("Event feedback", result.title());
         assertEquals(true, result.active());
@@ -41,7 +41,7 @@ class FeedbackServiceTest {
     void preventsDuplicateResponseForSameUserAndActivity() {
         UUID formId = UUID.randomUUID();
         UUID respondentId = UUID.randomUUID();
-        FeedbackForm form = new FeedbackForm(FeedbackActivityType.EVENT, UUID.randomUUID(), "Feedback", "[]");
+        FeedbackForm form = new FeedbackForm(FeedbackActivityType.EVENT, UUID.randomUUID(), "Feedback", "[]", UUID.randomUUID());
         when(formRepository.findById(formId)).thenReturn(Optional.of(form));
         when(eligibility.canSubmit(respondentId, form)).thenReturn(true);
         when(responseRepository.existsByFormIdAndActivityIdAndRespondentId(formId, form.getActivityId(), respondentId))
@@ -58,7 +58,7 @@ class FeedbackServiceTest {
     void submitsEligibleResponseWithFivePointRating() {
         UUID formId = UUID.randomUUID();
         UUID respondentId = UUID.randomUUID();
-        FeedbackForm form = new FeedbackForm(FeedbackActivityType.SERVICE_REQUEST, UUID.randomUUID(), "Service feedback", "[]");
+        FeedbackForm form = new FeedbackForm(FeedbackActivityType.SERVICE_REQUEST, UUID.randomUUID(), "Service feedback", "[]", UUID.randomUUID());
         when(formRepository.findById(formId)).thenReturn(Optional.of(form));
         when(eligibility.canSubmit(respondentId, form)).thenReturn(true);
         when(responseRepository.existsByFormIdAndActivityIdAndRespondentId(formId, form.getActivityId(), respondentId))

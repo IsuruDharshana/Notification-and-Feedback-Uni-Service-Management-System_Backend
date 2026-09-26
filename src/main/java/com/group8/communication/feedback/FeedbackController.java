@@ -20,8 +20,8 @@ public class FeedbackController {
 
     @PostMapping("/forms")
     @ResponseStatus(HttpStatus.CREATED)
-    public FeedbackDtos.FormResponse createForm(@Valid @RequestBody FeedbackDtos.CreateFormRequest request) {
-        return service.createForm(request);
+    public FeedbackDtos.FormResponse createForm(Authentication auth, @Valid @RequestBody FeedbackDtos.CreateFormRequest request) {
+        return service.createForm(request, userId(auth));
     }
 
     @GetMapping("/forms")
@@ -44,8 +44,8 @@ public class FeedbackController {
     }
 
     @GetMapping("/forms/{formId}/responses")
-    public List<FeedbackDtos.ResponseItem> listResponses(@PathVariable UUID formId) {
-        return service.listResponses(formId);
+    public List<FeedbackDtos.ResponseItem> listResponses(@PathVariable UUID formId, Authentication auth) {
+        return service.listResponses(formId, userId(auth));
     }
 
     private UUID userId(Authentication auth) {

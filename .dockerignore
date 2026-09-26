@@ -1,0 +1,5 @@
+.git
+.github
+.m2-local
+target
+*.log
