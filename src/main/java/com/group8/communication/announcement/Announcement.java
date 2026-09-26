@@ -70,4 +70,15 @@ public class Announcement {
     public LocalDateTime getPublishedAt() { return publishedAt; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    public void publish(LocalDateTime publishedAt) {
+        this.status = AnnouncementStatus.PUBLISHED;
+        this.publishedAt = publishedAt;
+        this.updatedAt = publishedAt;
+    }
+
+    public void archive(LocalDateTime archivedAt) {
+        this.status = AnnouncementStatus.ARCHIVED;
+        this.updatedAt = archivedAt;
+    }
 }

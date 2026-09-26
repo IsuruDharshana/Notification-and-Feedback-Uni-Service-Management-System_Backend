@@ -1,0 +1,11 @@
+package com.group8.communication.feedback;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface FeedbackResponseRepository extends JpaRepository<FeedbackResponse, UUID> {
+    boolean existsByFormIdAndActivityIdAndRespondentId(UUID formId, UUID activityId, UUID respondentId);
+    List<FeedbackResponse> findByFormIdOrderByCreatedAtDesc(UUID formId);
+}

@@ -9,12 +9,22 @@ import java.util.UUID;
 @Service
 public class NotificationService {
     private final NotificationRepository repository;
-    public NotificationService(NotificationRepository repository) { this.repository = repository; }
+    private final RecipientDirectory recipientDirectory;
+    public NotificationService(NotificationRepository repository, RecipientDirectory recipientDirectory) {
+        this.repository = repository;
+        this.recipientDirectory = recipientDirectory;
+    }
     public Notification create(NotificationDtos.TriggerRequest request) {
+        if (request == null || request.recipientId() == null || request.relatedType() == null || request.message() == null || request.message().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_NOTIFICATION_REQUEST");
+        }
+        if (!recipientDirectory.exists(request.recipientId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "NOTIFICATION_RECIPIENT_NOT_FOUND");
+        }
         return repository.save(new Notification(request.recipientId(), request.message().trim(), request.relatedType(), request.relatedId()));
     }
     public Page<NotificationDtos.Response> findMine(UUID userId, boolean unreadOnly, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100), Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Notification> result = unreadOnly ? repository.findByRecipientIdAndReadFalse(userId, pageable) : repository.findByRecipientId(userId, pageable);
         return result.map(NotificationDtos.Response::from);
     }

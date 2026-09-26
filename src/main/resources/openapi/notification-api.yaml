@@ -103,6 +103,211 @@ paths:
           description: Request validation failed.
         '403':
           description: Missing or invalid service key.
+        '404':
+          description: Recipient does not exist in the Group 5 directory.
+        '503':
+          description: Group 5 recipient directory is not configured or unavailable.
+
+  /api/announcements:
+    get:
+      summary: List published announcements visible to the supplied audience context
+      operationId: listVisibleAnnouncements
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: audienceType
+          in: query
+          schema:
+            $ref: '#/components/schemas/AudienceType'
+        - name: audienceValue
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Published announcements matching ALL and the supplied audience.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Announcement'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      summary: Create an announcement draft
+      operationId: createAnnouncement
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnouncementCreateRequest'
+      responses:
+        '201':
+          description: Draft created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Announcement'
+        '400':
+          description: Invalid announcement or targeting rule.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/announcements/{id}/publish:
+    post:
+      summary: Publish an announcement draft
+      operationId: publishAnnouncement
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AnnouncementId'
+      responses:
+        '200':
+          description: Announcement published.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Announcement'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: The authenticated user did not create the announcement.
+        '404':
+          description: Announcement was not found.
+        '409':
+          description: Announcement is not a draft.
+
+  /api/announcements/{id}/archive:
+    post:
+      summary: Archive a published announcement
+      operationId: archiveAnnouncement
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AnnouncementId'
+      responses:
+        '200':
+          description: Announcement archived.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Announcement'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: The authenticated user did not create the announcement.
+        '404':
+          description: Announcement was not found.
+        '409':
+          description: Announcement is not published.
+
+  /api/feedback/forms:
+    get:
+      summary: List active feedback forms
+      operationId: listFeedbackForms
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active forms ordered newest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeedbackForm'
+    post:
+      summary: Create a feedback form for an event or service request
+      operationId: createFeedbackForm
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackFormCreateRequest'
+      responses:
+        '201':
+          description: Feedback form created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackForm'
+        '400':
+          description: Invalid feedback form.
+        '409':
+          description: A form already exists for the activity.
+
+  /api/feedback/forms/{formId}:
+    get:
+      summary: Get one feedback form
+      operationId: getFeedbackForm
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FeedbackFormId'
+      responses:
+        '200':
+          description: Feedback form.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackForm'
+        '404':
+          description: Feedback form was not found.
+
+  /api/feedback/forms/{formId}/responses:
+    get:
+      summary: List responses for a feedback form
+      operationId: listFeedbackResponses
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FeedbackFormId'
+      responses:
+        '200':
+          description: Feedback responses.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeedbackResponse'
+        '404':
+          description: Feedback form was not found.
+    post:
+      summary: Submit one response to a feedback form
+      operationId: submitFeedbackResponse
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FeedbackFormId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackResponseRequest'
+      responses:
+        '201':
+          description: Feedback response created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackResponse'
+        '400':
+          description: Rating or response data is invalid.
+        '403':
+          description: The user is not eligible to submit feedback.
+        '404':
+          description: Feedback form was not found.
+        '409':
+          description: Form is inactive or the user already submitted a response.
 
 components:
   securitySchemes:
@@ -118,6 +323,22 @@ components:
   parameters:
     NotificationId:
       name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    AnnouncementId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    FeedbackFormId:
+      name: formId
       in: path
       required: true
       schema:
@@ -217,3 +438,169 @@ components:
         - RESERVATION
         - SERVICE_REQUEST
         - EXTERNAL
+
+    AudienceType:
+      type: string
+      enum:
+        - ALL
+        - ROLE
+        - DEPARTMENT
+        - FACULTY
+        - SERVICE_UNIT
+
+    AnnouncementCreateRequest:
+      type: object
+      required:
+        - title
+        - content
+        - audienceType
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+        audienceType:
+          $ref: '#/components/schemas/AudienceType'
+        ruleValue:
+          type: string
+          maxLength: 100
+
+    Announcement:
+      type: object
+      required:
+        - id
+        - title
+        - content
+        - status
+        - createdBy
+        - audienceType
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        content:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, ARCHIVED]
+        createdBy:
+          type: string
+          format: uuid
+        audienceType:
+          $ref: '#/components/schemas/AudienceType'
+        ruleValue:
+          type: string
+          nullable: true
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FeedbackFormCreateRequest:
+      type: object
+      required:
+        - activityType
+        - activityId
+        - title
+        - questionsJson
+      properties:
+        activityType:
+          type: string
+          enum: [EVENT, SERVICE_REQUEST]
+        activityId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 200
+        questionsJson:
+          type: string
+
+    FeedbackForm:
+      type: object
+      required:
+        - id
+        - activityType
+        - activityId
+        - title
+        - questionsJson
+        - active
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        activityType:
+          type: string
+          enum: [EVENT, SERVICE_REQUEST]
+        activityId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        questionsJson:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FeedbackResponseRequest:
+      type: object
+      required:
+        - rating
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+          maxLength: 2000
+
+    FeedbackResponse:
+      type: object
+      required:
+        - id
+        - formId
+        - activityId
+        - respondentId
+        - rating
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        formId:
+          type: string
+          format: uuid
+        activityId:
+          type: string
+          format: uuid
+        respondentId:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+        comment:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
