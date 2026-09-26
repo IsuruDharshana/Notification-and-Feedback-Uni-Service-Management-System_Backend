@@ -18,6 +18,9 @@ public class NotificationService {
         if (request == null || request.recipientId() == null || request.relatedType() == null || request.message() == null || request.message().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_NOTIFICATION_REQUEST");
         }
+        if (request.relatedType() != RelatedType.EXTERNAL && request.relatedId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "RELATED_ID_REQUIRED");
+        }
         if (!recipientDirectory.exists(request.recipientId())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "NOTIFICATION_RECIPIENT_NOT_FOUND");
         }

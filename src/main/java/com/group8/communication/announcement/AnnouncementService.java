@@ -1,5 +1,7 @@
 package com.group8.communication.announcement;
 
+import com.group8.communication.integration.UserDirectory;
+import com.group8.communication.integration.UserProfile;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -11,9 +13,11 @@ import java.util.UUID;
 @Service
 public class AnnouncementService {
     private final AnnouncementRepository repository;
+    private final UserDirectory userDirectory;
 
-    public AnnouncementService(AnnouncementRepository repository) {
+    public AnnouncementService(AnnouncementRepository repository, UserDirectory userDirectory) {
         this.repository = repository;
+        this.userDirectory = userDirectory;
     }
 
     public Announcement create(AnnouncementDtos.CreateRequest request, UUID createdBy) {
@@ -58,6 +62,15 @@ public class AnnouncementService {
                 .toList();
     }
 
+    public List<AnnouncementDtos.Response> visibleForUser(UUID userId) {
+        UserProfile profile = userDirectory.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND"));
+        return repository.findByStatusOrderByPublishedAtDesc(AnnouncementStatus.PUBLISHED).stream()
+                .filter(announcement -> isVisible(announcement.getAudienceRule(), profile))
+                .map(AnnouncementDtos.Response::from)
+                .toList();
+    }
+
     private boolean isVisible(AudienceRule rule, AudienceType audienceType, String audienceValue) {
         if (rule.getAudienceType() == AudienceType.ALL) {
             return true;
@@ -65,6 +78,18 @@ public class AnnouncementService {
         return audienceType == rule.getAudienceType()
                 && audienceValue != null
                 && audienceValue.equalsIgnoreCase(rule.getRuleValue());
+    }
+
+    private boolean isVisible(AudienceRule rule, UserProfile profile) {
+        if (rule.getAudienceType() == AudienceType.ALL) return true;
+        String profileValue = switch (rule.getAudienceType()) {
+            case ROLE -> profile.role();
+            case DEPARTMENT -> profile.department();
+            case FACULTY -> profile.faculty();
+            case SERVICE_UNIT -> profile.serviceUnit();
+            case ALL -> null;
+        };
+        return profileValue != null && profileValue.equalsIgnoreCase(rule.getRuleValue());
     }
 
     private String normalizeRuleValue(AudienceType type, String value) {

@@ -14,3 +14,9 @@ notification.service-key: ${NOTIFICATION_SERVICE_KEY:change-me-in-production}
 user-directory:
   base-url: ${USER_DIRECTORY_BASE_URL:}
   user-path: ${USER_DIRECTORY_USER_PATH:/api/users/{userId}}
+facility-directory:
+  base-url: ${FACILITY_DIRECTORY_BASE_URL:}
+  venue-path: ${FACILITY_DIRECTORY_VENUE_PATH:/api/facilities/{venueId}}
+group7-feedback:
+  base-url: ${GROUP7_FEEDBACK_BASE_URL:}
+  eligibility-path: ${GROUP7_FEEDBACK_ELIGIBILITY_PATH:/api/feedback-eligibility/{activityType}/{activityId}?userId={userId}}

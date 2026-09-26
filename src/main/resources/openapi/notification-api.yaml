@@ -114,18 +114,9 @@ paths:
       operationId: listVisibleAnnouncements
       security:
         - bearerAuth: []
-      parameters:
-        - name: audienceType
-          in: query
-          schema:
-            $ref: '#/components/schemas/AudienceType'
-        - name: audienceValue
-          in: query
-          schema:
-            type: string
       responses:
         '200':
-          description: Published announcements matching ALL and the supplied audience.
+          description: Published announcements matching the authenticated user's Group 5 audience data.
           content:
             application/json:
               schema:
@@ -134,6 +125,10 @@ paths:
                   $ref: '#/components/schemas/Announcement'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Authenticated user was not found in Group 5 directory.
+        '503':
+          description: Group 5 directory is not configured or unavailable.
     post:
       summary: Create an announcement draft
       operationId: createAnnouncement
@@ -308,6 +303,8 @@ paths:
           description: Feedback form was not found.
         '409':
           description: Form is inactive or the user already submitted a response.
+        '503':
+          description: Group 7 feedback-eligibility service is unavailable or returned an invalid response.
 
 components:
   securitySchemes:

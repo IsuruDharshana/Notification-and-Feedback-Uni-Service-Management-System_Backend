@@ -1,5 +1,6 @@
 package com.group8.communication.announcement;
 
+import com.group8.communication.integration.UserDirectory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,6 +21,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AnnouncementServiceTest {
     @Mock private AnnouncementRepository repository;
+    @Mock private UserDirectory userDirectory;
     @InjectMocks private AnnouncementService service;
 
     @Test

@@ -35,10 +35,8 @@ public class AnnouncementController {
     }
 
     @GetMapping
-    public List<AnnouncementDtos.Response> visible(
-            @RequestParam(required = false) AudienceType audienceType,
-            @RequestParam(required = false) String audienceValue) {
-        return service.visible(audienceType, audienceValue);
+    public List<AnnouncementDtos.Response> visible(Authentication auth) {
+        return service.visibleForUser(userId(auth));
     }
 
     private UUID userId(Authentication auth) {

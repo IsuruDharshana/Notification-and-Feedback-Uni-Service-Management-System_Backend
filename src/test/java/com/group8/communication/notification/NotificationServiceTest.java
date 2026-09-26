@@ -75,7 +75,7 @@ class NotificationServiceTest {
         when(recipientDirectory.exists(recipientId)).thenReturn(false);
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> service.create(new NotificationDtos.TriggerRequest(recipientId, "Message", RelatedType.EVENT, null)));
+                () -> service.create(new NotificationDtos.TriggerRequest(recipientId, "Message", RelatedType.EVENT, UUID.randomUUID())));
 
         assertEquals(404, exception.getStatusCode().value());
         assertEquals("NOTIFICATION_RECIPIENT_NOT_FOUND", exception.getReason());

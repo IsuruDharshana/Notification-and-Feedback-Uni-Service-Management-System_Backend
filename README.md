@@ -18,12 +18,14 @@ The notification contract, request examples, response schemas, and error
 responses are documented in `src/main/resources/openapi/notification-api.yaml`.
 
 Announcement targeting supports `ALL`, `ROLE`, `DEPARTMENT`, `FACULTY`, and
-`SERVICE_UNIT`. Sprint 2 uses the supplied audience context for basic matching;
-real Group 5 role/department/faculty validation remains a cross-service Sprint 3 integration.
+`SERVICE_UNIT`. Published announcements now use the authenticated user's Group 5
+profile for visibility checks. If Group 5 is not configured, the service returns
+a safe `503` instead of exposing targeted data.
 
 Feedback prevents duplicate submissions for the same user, form, and activity.
-The `FeedbackEligibility` interface is the Group 7 integration seam; Sprint 2
-uses a permissive synthetic implementation until Group 7 exposes its completion-status contract.
+When `GROUP7_FEEDBACK_BASE_URL` is configured, submissions call Group 7's
+feedback-eligibility endpoint. If it is blank, local synthetic mode permits
+submissions for development only.
 
 ## Sprint 1 domain model
 
@@ -38,9 +40,11 @@ microservices.
 
 ## Run
 
-Set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `NOTIFICATION_SERVICE_KEY` and `USER_DIRECTORY_BASE_URL`, then run `mvn spring-boot:run`. Flyway creates the schema.
+Set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `NOTIFICATION_SERVICE_KEY`, `USER_DIRECTORY_BASE_URL`, `FACILITY_DIRECTORY_BASE_URL` and `GROUP7_FEEDBACK_BASE_URL`, then run `mvn spring-boot:run`. Flyway creates the schema.
 
 The notification trigger validates `recipientId` through the Group 5 user directory; it does not read the Group 5 database directly. By default it calls `GET {USER_DIRECTORY_BASE_URL}/api/users/{userId}`. Set `USER_DIRECTORY_USER_PATH` if Group 5 agrees on a different path. A missing recipient returns `404 NOTIFICATION_RECIPIENT_NOT_FOUND`; an unconfigured or unavailable directory returns `503`.
+
+The Group 6 venue seam calls `GET {FACILITY_DIRECTORY_BASE_URL}/api/facilities/{venueId}` by default. The Group 7 feedback seam calls `GET {GROUP7_FEEDBACK_BASE_URL}/api/feedback-eligibility/{activityType}/{activityId}?userId={userId}` and expects `{ "eligible": true|false }`. Override the paths with `FACILITY_DIRECTORY_VENUE_PATH` and `GROUP7_FEEDBACK_ELIGIBILITY_PATH` when the provider contracts are finalized.
 
 ## Verification
 
