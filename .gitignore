@@ -1,4 +1,5 @@
 target/
+.m2-local/
 .idea/
 *.iml
 *.log

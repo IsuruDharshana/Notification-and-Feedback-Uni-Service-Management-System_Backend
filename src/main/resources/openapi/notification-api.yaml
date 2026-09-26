@@ -1,0 +1,219 @@
+openapi: 3.0.3
+info:
+  title: Group 8 Notification API
+  version: 1.0.0
+  description: |
+    Cross-team contract for the communication-feedback-service notification
+    foundation. Group 6, Group 7, and Group 8 workflows may call the trigger
+    endpoint after their own state change has committed successfully.
+servers:
+  - url: /
+paths:
+  /api/notifications:
+    get:
+      summary: List notifications for the authenticated user
+      operationId: listMyNotifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: A page of notifications ordered newest first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/notifications/{id}/read:
+    patch:
+      summary: Mark one notification as read
+      operationId: markNotificationRead
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Updated notification.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: The authenticated user does not own the notification.
+        '404':
+          description: Notification was not found.
+
+  /api/notifications/trigger:
+    post:
+      summary: Create a notification from a trusted service workflow
+      operationId: triggerNotification
+      security:
+        - serviceKey: []
+      parameters:
+        - name: X-Service-Key
+          in: header
+          required: true
+          description: Shared secret for trusted service-to-service calls.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationTriggerRequest'
+            examples:
+              reservationApproved:
+                value:
+                  recipientId: 00000000-0000-0000-0000-000000000001
+                  message: Reservation approved for Lab B-204.
+                  relatedType: RESERVATION
+                  relatedId: 00000000-0000-0000-0000-000000000002
+      responses:
+        '201':
+          description: Notification created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '400':
+          description: Request validation failed.
+        '403':
+          description: Missing or invalid service key.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    serviceKey:
+      type: apiKey
+      in: header
+      name: X-Service-Key
+
+  parameters:
+    NotificationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT.
+
+  schemas:
+    NotificationTriggerRequest:
+      type: object
+      required:
+        - recipientId
+        - message
+        - relatedType
+      properties:
+        recipientId:
+          type: string
+          format: uuid
+        message:
+          type: string
+          minLength: 1
+        relatedType:
+          $ref: '#/components/schemas/RelatedType'
+        relatedId:
+          type: string
+          format: uuid
+          nullable: true
+
+    Notification:
+      type: object
+      required:
+        - id
+        - recipientId
+        - message
+        - relatedType
+        - isRead
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        recipientId:
+          type: string
+          format: uuid
+        message:
+          type: string
+        relatedType:
+          $ref: '#/components/schemas/RelatedType'
+        relatedId:
+          type: string
+          format: uuid
+          nullable: true
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    NotificationPage:
+      type: object
+      required:
+        - content
+        - number
+        - size
+        - totalElements
+        - totalPages
+        - first
+        - last
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+        number:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
+
+    RelatedType:
+      type: string
+      enum:
+        - EVENT
+        - REGISTRATION
+        - ANNOUNCEMENT
+        - RESERVATION
+        - SERVICE_REQUEST
+        - EXTERNAL
