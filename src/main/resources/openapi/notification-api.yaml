@@ -3,9 +3,8 @@ info:
   title: Group 8 Notification API
   version: 1.0.0
   description: |
-    Cross-team contract for the communication-feedback-service notification
-    foundation. Group 6, Group 7, and Group 8 workflows may call the trigger
-    endpoint after their own state change has committed successfully.
+    Contract used by event-service, reservation-service, and service-request-service
+    to create in-application notifications after their own state change commits.
 servers:
   - url: /
 paths:
@@ -88,10 +87,13 @@ paths:
             examples:
               reservationApproved:
                 value:
-                  recipientId: 00000000-0000-0000-0000-000000000001
+                  recipientId: usr-student-001
+                  type: REGISTRATION_CONFIRMED
                   message: Reservation approved for Lab B-204.
-                  relatedType: RESERVATION
+                  relatedType: REGISTRATION
                   relatedId: 00000000-0000-0000-0000-000000000002
+                  sourceService: event-service
+                  idempotencyKey: event-registration-001-confirmed
       responses:
         '201':
           description: Notification created.
@@ -99,9 +101,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Notification'
+        '200':
+          description: The idempotency key was already processed; the existing notification is returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
         '400':
           description: Request validation failed.
-        '403':
+        '401':
           description: Missing or invalid service key.
         '404':
           description: Recipient does not exist in the Group 5 directory.
@@ -367,12 +375,18 @@ components:
       type: object
       required:
         - recipientId
+        - type
         - message
         - relatedType
+        - sourceService
+        - idempotencyKey
       properties:
         recipientId:
           type: string
-          format: uuid
+          maxLength: 64
+          example: usr-student-001
+        type:
+          $ref: '#/components/schemas/NotificationType'
         message:
           type: string
           minLength: 1
@@ -382,14 +396,23 @@ components:
           type: string
           format: uuid
           nullable: true
+        sourceService:
+          type: string
+          maxLength: 64
+        idempotencyKey:
+          type: string
+          maxLength: 200
 
     Notification:
       type: object
       required:
         - id
         - recipientId
+        - type
         - message
         - relatedType
+        - sourceService
+        - idempotencyKey
         - isRead
         - createdAt
       properties:
@@ -398,7 +421,9 @@ components:
           format: uuid
         recipientId:
           type: string
-          format: uuid
+          maxLength: 64
+        type:
+          $ref: '#/components/schemas/NotificationType'
         message:
           type: string
         relatedType:
@@ -407,6 +432,10 @@ components:
           type: string
           format: uuid
           nullable: true
+        sourceService:
+          type: string
+        idempotencyKey:
+          type: string
         isRead:
           type: boolean
         createdAt:
@@ -451,6 +480,14 @@ components:
         - RESERVATION
         - SERVICE_REQUEST
         - EXTERNAL
+
+    NotificationType:
+      type: string
+      enum:
+        - REGISTRATION_CONFIRMED
+        - REGISTRATION_CANCELLED
+        - EVENT_CANCELLED
+        - EVENT_UPDATED
 
     AudienceType:
       type: string

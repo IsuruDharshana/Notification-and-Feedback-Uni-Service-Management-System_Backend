@@ -11,7 +11,6 @@ import com.group8.communication.integration.UserDirectory;
 import com.group8.communication.integration.UserProfile;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Component
 public class HttpRecipientDirectory implements RecipientDirectory, UserDirectory {
@@ -29,7 +28,7 @@ public class HttpRecipientDirectory implements RecipientDirectory, UserDirectory
     }
 
     @Override
-    public boolean exists(UUID recipientId) {
+    public boolean exists(String recipientId) {
         if (recipientId == null) return false;
         if (baseUrl.isBlank()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "RECIPIENT_DIRECTORY_NOT_CONFIGURED");
@@ -46,7 +45,7 @@ public class HttpRecipientDirectory implements RecipientDirectory, UserDirectory
     }
 
     @Override
-    public Optional<UserProfile> findById(UUID userId) {
+    public Optional<UserProfile> findById(String userId) {
         if (userId == null) return Optional.empty();
         if (baseUrl.isBlank()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "RECIPIENT_DIRECTORY_NOT_CONFIGURED");

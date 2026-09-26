@@ -8,7 +8,7 @@ documented APIs and identifiers; they must not read this database directly.
 
 - `GET /api/notifications?unreadOnly=false&page=0&size=10` with `Authorization: Bearer <JWT>`; JWT subject must be the user UUID.
 - `PATCH /api/notifications/{id}/read` with a user JWT.
-- `POST /api/notifications/trigger` with `X-Service-Key`, for example from event-service when an event is cancelled.
+- `POST /api/notifications/trigger` with `X-Service-Key`, for example from event-service when an event is cancelled. The trigger contract uses `recipientId` (Group 5 string ID), `type`, `message`, `relatedType`, `relatedId`, `sourceService`, and `idempotencyKey`.
 - `POST /api/announcements`, `POST /api/announcements/{id}/publish`, and `GET /api/announcements` with a user JWT.
 - `POST /api/feedback/forms`, `GET /api/feedback/forms`, and `POST /api/feedback/forms/{formId}/responses` with a user JWT.
 - `GET /api/engagement-dashboard/summary` with a user JWT.
@@ -41,9 +41,11 @@ microservices.
 
 ## Run
 
-Set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `NOTIFICATION_SERVICE_KEY`, `USER_DIRECTORY_BASE_URL`, `FACILITY_DIRECTORY_BASE_URL` and `GROUP7_FEEDBACK_BASE_URL`, then run `mvn spring-boot:run`. Flyway creates the schema. The application intentionally has no development fallback for database credentials, JWT signing secrets, or the service key.
+Set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `NOTIFICATIONS_SERVICE_KEY`, `USER_DIRECTORY_BASE_URL`, `FACILITY_DIRECTORY_BASE_URL` and `GROUP7_FEEDBACK_BASE_URL`, then run `mvn spring-boot:run`. Flyway creates the schema. The application intentionally has no development fallback for database credentials or JWT signing secrets.
 
 The notification trigger validates `recipientId` through the Group 5 user directory; it does not read the Group 5 database directly. By default it calls `GET {USER_DIRECTORY_BASE_URL}/api/users/{userId}`. Set `USER_DIRECTORY_USER_PATH` if Group 5 agrees on a different path. A missing recipient returns `404 NOTIFICATION_RECIPIENT_NOT_FOUND`; an unconfigured or unavailable directory returns `503`.
+
+Notification trigger idempotency is enforced by a unique `idempotencyKey` up to 200 characters. A new notification returns `201`; a replay returns `200` with the original notification. Invalid or missing `X-Service-Key` returns `401`. The accepted notification types are `REGISTRATION_CONFIRMED`, `REGISTRATION_CANCELLED`, `EVENT_CANCELLED`, and `EVENT_UPDATED`.
 
 The Group 6 venue seam calls `GET {FACILITY_DIRECTORY_BASE_URL}/api/facilities/{venueId}` by default. The Group 7 feedback seam calls `GET {GROUP7_FEEDBACK_BASE_URL}/api/feedback-eligibility/{activityType}/{activityId}?userId={userId}` and expects `{ "eligible": true|false }`. Override the paths with `FACILITY_DIRECTORY_VENUE_PATH` and `GROUP7_FEEDBACK_ELIGIBILITY_PATH` when the provider contracts are finalized.
 

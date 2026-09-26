@@ -45,16 +45,21 @@ class NotificationServiceTest {
 
     @Test
     void createTrimsMessageAndPersistsNotification() {
-        UUID recipientId = UUID.randomUUID();
+        String recipientId = "usr-student-001";
+        UUID relatedId = UUID.randomUUID();
         NotificationDtos.TriggerRequest request = new NotificationDtos.TriggerRequest(
-                recipientId, "  Reservation approved.  ", RelatedType.RESERVATION, UUID.randomUUID());
+                recipientId, NotificationType.REGISTRATION_CONFIRMED, "  Reservation approved.  ",
+                RelatedType.REGISTRATION, relatedId, "event-service", "registration-001-confirmed");
         when(repository.save(any(Notification.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Notification result = service.create(request);
 
         assertEquals(recipientId, result.getRecipientId());
         assertEquals("Reservation approved.", result.getMessage());
-        assertEquals(RelatedType.RESERVATION, result.getRelatedType());
+        assertEquals(NotificationType.REGISTRATION_CONFIRMED, result.getType());
+        assertEquals(RelatedType.REGISTRATION, result.getRelatedType());
+        assertEquals("event-service", result.getSourceService());
+        assertEquals("registration-001-confirmed", result.getIdempotencyKey());
         assertFalse(result.isRead());
         verify(repository).save(any(Notification.class));
     }
@@ -63,7 +68,8 @@ class NotificationServiceTest {
     void createRejectsInvalidRequestWhenCalledOutsideTheController() {
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> service.create(new NotificationDtos.TriggerRequest(
-                        UUID.randomUUID(), "   ", RelatedType.EVENT, null)));
+                        "usr-student-001", NotificationType.EVENT_UPDATED, "   ", RelatedType.EVENT,
+                        UUID.randomUUID(), "event-service", "event-001-updated")));
 
         assertEquals(400, exception.getStatusCode().value());
         verifyNoMoreInteractions(repository);
@@ -71,21 +77,25 @@ class NotificationServiceTest {
 
     @Test
     void rejectsUnknownRecipientBeforePersisting() {
-        UUID recipientId = UUID.randomUUID();
+        String recipientId = "usr-student-404";
         when(recipientDirectory.exists(recipientId)).thenReturn(false);
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> service.create(new NotificationDtos.TriggerRequest(recipientId, "Message", RelatedType.EVENT, UUID.randomUUID())));
+                () -> service.create(new NotificationDtos.TriggerRequest(
+                        recipientId, NotificationType.EVENT_UPDATED, "Message", RelatedType.EVENT, UUID.randomUUID(),
+                        "event-service", "event-404-updated")));
 
         assertEquals(404, exception.getStatusCode().value());
         assertEquals("NOTIFICATION_RECIPIENT_NOT_FOUND", exception.getReason());
+        verify(repository).findByIdempotencyKey("event-404-updated");
         verifyNoMoreInteractions(repository);
     }
 
     @Test
     void findMineUsesUnreadRepositoryAndNewestFirstOrdering() {
-        UUID recipientId = UUID.randomUUID();
-        Notification notification = new Notification(recipientId, "Unread", RelatedType.EVENT, null);
+        String recipientId = "usr-student-001";
+        Notification notification = new Notification(recipientId, NotificationType.EVENT_UPDATED, "Unread",
+                RelatedType.EVENT, null, "event-service", "event-001-updated");
         when(repository.findByRecipientIdAndReadFalse(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(notification)));
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
@@ -103,8 +113,9 @@ class NotificationServiceTest {
 
     @Test
     void markReadOnlyUpdatesNotificationOwnedByUser() {
-        UUID userId = UUID.randomUUID();
-        Notification notification = new Notification(userId, "Please review", RelatedType.SERVICE_REQUEST, UUID.randomUUID());
+        String userId = "usr-student-001";
+        Notification notification = new Notification(userId, NotificationType.EVENT_UPDATED, "Please review",
+                RelatedType.SERVICE_REQUEST, UUID.randomUUID(), "event-service", "service-request-001-updated");
         when(repository.findById(notification.getId())).thenReturn(Optional.of(notification));
         when(repository.save(notification)).thenReturn(notification);
 
@@ -117,11 +128,12 @@ class NotificationServiceTest {
 
     @Test
     void markReadRejectsNotificationOwnedByAnotherUser() {
-        Notification notification = new Notification(UUID.randomUUID(), "Private", RelatedType.ANNOUNCEMENT, null);
+        Notification notification = new Notification("usr-student-002", NotificationType.EVENT_UPDATED, "Private",
+                RelatedType.ANNOUNCEMENT, null, "event-service", "announcement-001-updated");
         when(repository.findById(notification.getId())).thenReturn(Optional.of(notification));
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> service.markRead(notification.getId(), UUID.randomUUID()));
+                () -> service.markRead(notification.getId(), "usr-student-001"));
 
         assertEquals(403, exception.getStatusCode().value());
     }
@@ -132,8 +144,25 @@ class NotificationServiceTest {
         when(repository.findById(notificationId)).thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> service.markRead(notificationId, UUID.randomUUID()));
+                () -> service.markRead(notificationId, "usr-student-001"));
 
         assertEquals(404, exception.getStatusCode().value());
+    }
+
+    @Test
+    void createReturnsExistingNotificationOnIdempotencyReplay() {
+        String idempotencyKey = "event-001-updated";
+        Notification existing = new Notification("usr-student-001", NotificationType.EVENT_UPDATED,
+                "Already delivered", RelatedType.EVENT, UUID.randomUUID(), "event-service", idempotencyKey);
+        NotificationDtos.TriggerRequest request = new NotificationDtos.TriggerRequest(
+                "usr-student-001", NotificationType.EVENT_UPDATED, "Already delivered", RelatedType.EVENT,
+                existing.getRelatedId(), "event-service", idempotencyKey);
+        when(repository.findByIdempotencyKey(idempotencyKey)).thenReturn(Optional.of(existing));
+
+        NotificationService.CreateResult result = service.createWithIdempotency(request);
+
+        assertTrue(result.replayed());
+        assertEquals(existing.getId(), result.notification().getId());
+        verify(repository).findByIdempotencyKey(idempotencyKey);
     }
 }

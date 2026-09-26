@@ -63,7 +63,7 @@ public class AnnouncementService {
     }
 
     public List<AnnouncementDtos.Response> visibleForUser(UUID userId) {
-        UserProfile profile = userDirectory.findById(userId)
+        UserProfile profile = userDirectory.findById(userId.toString())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND"));
         return repository.findByStatusOrderByPublishedAtDesc(AnnouncementStatus.PUBLISHED).stream()
                 .filter(announcement -> isVisible(announcement.getAudienceRule(), profile))
