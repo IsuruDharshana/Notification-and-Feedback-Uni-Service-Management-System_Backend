@@ -1,0 +1,46 @@
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-communication_feedback_db}
+      MYSQL_USER: ${MYSQL_USER:-group8}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: communication-feedback-service:local
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 8082
+      DB_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-communication_feedback_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: ${MYSQL_USER:-group8}
+      DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      NOTIFICATIONS_SERVICE_KEY: ${NOTIFICATIONS_SERVICE_KEY:?Set NOTIFICATIONS_SERVICE_KEY in .env}
+      USER_DIRECTORY_BASE_URL: ${USER_DIRECTORY_BASE_URL:-}
+      USER_DIRECTORY_USER_PATH: ${USER_DIRECTORY_USER_PATH:-/api/users/{userId}}
+      FACILITY_DIRECTORY_BASE_URL: ${FACILITY_DIRECTORY_BASE_URL:-}
+      FACILITY_DIRECTORY_VENUE_PATH: ${FACILITY_DIRECTORY_VENUE_PATH:-/api/facilities/{venueId}}
+      GROUP7_FEEDBACK_BASE_URL: ${GROUP7_FEEDBACK_BASE_URL:-}
+      GROUP7_FEEDBACK_ELIGIBILITY_PATH: ${GROUP7_FEEDBACK_ELIGIBILITY_PATH:-/api/feedback-eligibility/{activityType}/{activityId}?userId={userId}}
+    ports:
+      - "${APP_PORT:-8082}:8082"
+
+volumes:
+  mysql_data:

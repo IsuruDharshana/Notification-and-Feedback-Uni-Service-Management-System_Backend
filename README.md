@@ -13,7 +13,7 @@ documented APIs and identifiers; they must not read this database directly.
 - `POST /api/feedback/forms`, `GET /api/feedback/forms`, and `POST /api/feedback/forms/{formId}/responses` with a user JWT.
 - `GET /api/engagement-dashboard/summary` with a user JWT.
 
-The trigger contract is `{ "recipientId": "uuid", "message": "Your event has been cancelled.", "relatedType": "EVENT", "relatedId": "uuid" }`.
+The trigger contract is `{ "recipientId": "usr-student-001", "type": "EVENT_CANCELLED", "message": "Your event has been cancelled.", "relatedType": "EVENT", "relatedId": "uuid", "sourceService": "event-service", "idempotencyKey": "event-123-cancelled" }`.
 
 The notification contract, request examples, response schemas, and error
 responses are documented in `src/main/resources/openapi/notification-api.yaml`.
@@ -56,4 +56,21 @@ The engagement summary reports communication-feedback-owned metrics. Event parti
 Run `mvn -s .mvn-settings.xml test` locally. GitHub Actions runs the same test
 command for pushes to `main`/`master` and for pull requests.
 
-Build the deployment image with `docker build -t communication-feedback-service .`. The image runs as a non-root user and exposes port `8082`; provide all required environment variables at runtime.
+## Run with Docker
+
+Copy `.env.example` to `.env` and replace the example secrets. Then start the
+application and its MySQL database with:
+
+```text
+docker compose up --build -d
+```
+
+The service is available at `http://localhost:8082` and its health endpoint is
+`http://localhost:8082/actuator/health`. Flyway runs the database migrations on
+startup. Stop the containers with `docker compose down`; the MySQL data remains
+in the `mysql_data` Docker volume.
+
+For a hosted deployment, build the image with `docker build -t communication-feedback-service .`.
+The image runs as a non-root user, listens on the `PORT` environment variable
+(default `8082`), and requires `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`,
+`JWT_SECRET`, and `NOTIFICATIONS_SERVICE_KEY` at runtime.

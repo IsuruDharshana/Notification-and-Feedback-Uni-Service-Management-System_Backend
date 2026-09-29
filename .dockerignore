@@ -3,3 +3,6 @@
 .m2-local
 target
 *.log
+.env
+.env.*
+!.env.example
