@@ -21,8 +21,8 @@ public class FeedbackService {
         this.eligibility = eligibility;
     }
 
-    public FeedbackDtos.FormResponse createForm(FeedbackDtos.CreateFormRequest request) {
-        if (request == null || request.activityType() == null || request.activityId() == null
+    public FeedbackDtos.FormResponse createForm(FeedbackDtos.CreateFormRequest request, UUID createdBy) {
+        if (createdBy == null || request == null || request.activityType() == null || request.activityId() == null
                 || request.title() == null || request.title().isBlank()
                 || request.questionsJson() == null || request.questionsJson().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_FEEDBACK_FORM_REQUEST");
@@ -31,7 +31,7 @@ public class FeedbackService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "FEEDBACK_FORM_ALREADY_EXISTS");
         }
         FeedbackForm form = new FeedbackForm(request.activityType(), request.activityId(),
-                request.title().trim(), request.questionsJson().trim());
+                request.title().trim(), request.questionsJson().trim(), createdBy);
         return FeedbackDtos.FormResponse.from(formRepository.save(form));
     }
 
@@ -64,8 +64,11 @@ public class FeedbackService {
         return FeedbackDtos.ResponseItem.from(responseRepository.save(response));
     }
 
-    public List<FeedbackDtos.ResponseItem> listResponses(UUID formId) {
-        findForm(formId);
+    public List<FeedbackDtos.ResponseItem> listResponses(UUID formId, UUID actorId) {
+        FeedbackForm form = findForm(formId);
+        if (actorId == null || !form.getCreatedBy().equals(actorId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FEEDBACK_RESPONSES_FORBIDDEN");
+        }
         return responseRepository.findByFormIdOrderByCreatedAtDesc(formId).stream()
                 .map(FeedbackDtos.ResponseItem::from)
                 .toList();

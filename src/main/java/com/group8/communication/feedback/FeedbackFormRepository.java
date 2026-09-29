@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface FeedbackFormRepository extends JpaRepository<FeedbackForm, UUID> {
     Optional<FeedbackForm> findByActivityTypeAndActivityId(FeedbackActivityType activityType, UUID activityId);
     List<FeedbackForm> findByActiveTrueOrderByCreatedAtDesc();
+    long countByActiveTrue();
 }

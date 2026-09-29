@@ -1,25 +1,23 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
 
-WORKDIR /app
+WORKDIR /workspace
 
-COPY pom.xml .
-
-RUN mvn -q -B dependency:go-offline
-
+COPY pom.xml .mvn-settings.xml ./
 COPY src ./src
 
-RUN mvn -q -B package -DskipTests
+RUN mvn -B -s .mvn-settings.xml -DskipTests package
 
-
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
-COPY --from=build /app/target/*.jar app.jar
+RUN groupadd --system appgroup \
+    && useradd --system --uid 10001 --gid appgroup appuser
+
+COPY --from=build /workspace/target/*.jar /app/app.jar
+
+USER appuser
 
 EXPOSE 8082
 
-HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=5 \
-  CMD wget -q -O /dev/null http://localhost:${PORT:-${SERVER_PORT:-8082}}/actuator/health || exit 1
-
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

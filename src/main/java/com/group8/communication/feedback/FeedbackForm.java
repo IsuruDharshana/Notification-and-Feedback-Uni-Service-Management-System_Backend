@@ -28,6 +28,9 @@ public class FeedbackForm {
     @Column(name = "activity_id", nullable = false, columnDefinition = "char(36)")
     private UUID activityId;
 
+    @Column(name = "created_by", nullable = false, columnDefinition = "char(36)")
+    private UUID createdBy;
+
     @Column(nullable = false, length = 200)
     private String title;
 
@@ -46,10 +49,11 @@ public class FeedbackForm {
     protected FeedbackForm() {
     }
 
-    public FeedbackForm(FeedbackActivityType activityType, UUID activityId, String title, String questionsJson) {
+    public FeedbackForm(FeedbackActivityType activityType, UUID activityId, String title, String questionsJson, UUID createdBy) {
         this.id = UUID.randomUUID();
         this.activityType = activityType;
         this.activityId = activityId;
+        this.createdBy = createdBy;
         this.title = title;
         this.questionsJson = questionsJson;
         this.active = true;
@@ -60,6 +64,7 @@ public class FeedbackForm {
     public UUID getId() { return id; }
     public FeedbackActivityType getActivityType() { return activityType; }
     public UUID getActivityId() { return activityId; }
+    public UUID getCreatedBy() { return createdBy; }
     public String getTitle() { return title; }
     public String getQuestionsJson() { return questionsJson; }
     public boolean isActive() { return active; }

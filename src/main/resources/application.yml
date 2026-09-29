@@ -1,35 +1,46 @@
 server:
   port: ${PORT:${SERVER_PORT:8082}}
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
 
 spring:
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/communication_feedback_db}
-    username: ${DB_USERNAME:group8}
-    password: ${DB_PASSWORD:group8}
-
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate.ddl-auto: validate
     open-in-view: false
-
   flyway:
     enabled: true
 
 jwt:
-  secret: ${JWT_SECRET:change-me-in-production-min-32-chars}
+  secret: ${JWT_SECRET}
 
 notification:
-  service-key: ${NOTIFICATION_SERVICE_KEY:change-me-in-production}
+  service-key: ${NOTIFICATIONS_SERVICE_KEY:${NOTIFICATION_SERVICE_KEY:}}
 
 user-directory:
   base-url: ${USER_DIRECTORY_BASE_URL:}
   user-path: ${USER_DIRECTORY_USER_PATH:/api/users/{userId}}
+
+facility-directory:
+  base-url: ${FACILITY_DIRECTORY_BASE_URL:}
+  venue-path: ${FACILITY_DIRECTORY_VENUE_PATH:/api/facilities/{venueId}}
+
+group7-feedback:
+  base-url: ${GROUP7_FEEDBACK_BASE_URL:}
+  eligibility-path: ${GROUP7_FEEDBACK_ELIGIBILITY_PATH:/api/feedback-eligibility/{activityType}/{activityId}?userId={userId}}
 
 management:
   endpoints:
     web:
       exposure:
         include: health
-
   endpoint:
     health:
+      probes:
+        enabled: true
       show-details: never

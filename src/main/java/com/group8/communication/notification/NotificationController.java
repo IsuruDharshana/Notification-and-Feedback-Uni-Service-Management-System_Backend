@@ -16,9 +16,10 @@ public class NotificationController {
         return service.findMine(userId(auth), unreadOnly, page, Math.min(size, 100));
     }
     @PatchMapping("/{id}/read") public NotificationDtos.Response read(@PathVariable UUID id, Authentication auth) { return service.markRead(id, userId(auth)); }
-    @PostMapping("/trigger") @ResponseStatus(HttpStatus.CREATED) public NotificationDtos.Response trigger(@RequestHeader(value="X-Service-Key", required=false) String key, @Valid @RequestBody NotificationDtos.TriggerRequest request) {
-        if (serviceKey == null || serviceKey.isBlank() || !serviceKey.equals(key)) throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "INVALID_SERVICE_KEY");
-        return NotificationDtos.Response.from(service.create(request));
+    @PostMapping("/trigger") public ResponseEntity<NotificationDtos.Response> trigger(@RequestHeader(value="X-Service-Key", required=false) String key, @Valid @RequestBody NotificationDtos.TriggerRequest request) {
+        if (serviceKey == null || serviceKey.isBlank() || !serviceKey.equals(key)) throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "INVALID_SERVICE_KEY");
+        NotificationService.CreateResult result = service.createWithIdempotency(request);
+        return ResponseEntity.status(result.replayed() ? HttpStatus.OK : HttpStatus.CREATED).body(NotificationDtos.Response.from(result.notification()));
     }
-    private UUID userId(Authentication auth) { try { return UUID.fromString(auth.getName()); } catch (Exception e) { throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "INVALID_USER_ID"); } }
+    private String userId(Authentication auth) { try { return auth.getName(); } catch (Exception e) { throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "INVALID_USER_ID"); } }
 }

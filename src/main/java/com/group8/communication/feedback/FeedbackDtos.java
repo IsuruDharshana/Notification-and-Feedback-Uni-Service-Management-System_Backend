@@ -26,13 +26,14 @@ public final class FeedbackDtos {
             UUID id,
             FeedbackActivityType activityType,
             UUID activityId,
+            UUID createdBy,
             String title,
             String questionsJson,
             boolean active,
             LocalDateTime createdAt,
             LocalDateTime updatedAt) {
         static FormResponse from(FeedbackForm form) {
-            return new FormResponse(form.getId(), form.getActivityType(), form.getActivityId(), form.getTitle(),
+            return new FormResponse(form.getId(), form.getActivityType(), form.getActivityId(), form.getCreatedBy(), form.getTitle(),
                     form.getQuestionsJson(), form.isActive(), form.getCreatedAt(), form.getUpdatedAt());
         }
     }

@@ -2,17 +2,18 @@ package com.group8.communication.notification;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
+import com.group8.communication.integration.UserDirectory;
+import com.group8.communication.integration.UserProfile;
 
-import java.util.UUID;
+import java.util.Optional;
 
 @Component
-public class HttpRecipientDirectory implements RecipientDirectory {
+public class HttpRecipientDirectory implements RecipientDirectory, UserDirectory {
     private final RestClient restClient;
     private final String baseUrl;
     private final String userPath;
@@ -27,23 +28,38 @@ public class HttpRecipientDirectory implements RecipientDirectory {
     }
 
     @Override
-    public boolean exists(UUID recipientId) {
-        if (recipientId == null) {
-            return false;
+    public boolean exists(String recipientId) {
+        if (recipientId == null) return false;
+        if (baseUrl.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "RECIPIENT_DIRECTORY_NOT_CONFIGURED");
         }
+        String uriTemplate = baseUrl + (userPath.startsWith("/") ? userPath : "/" + userPath);
+        try {
+            restClient.get().uri(uriTemplate, recipientId).retrieve().toBodilessEntity();
+            return true;
+        } catch (HttpClientErrorException.NotFound ignored) {
+            return false;
+        } catch (RestClientException exception) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "RECIPIENT_DIRECTORY_UNAVAILABLE", exception);
+        }
+    }
+
+    @Override
+    public Optional<UserProfile> findById(String userId) {
+        if (userId == null) return Optional.empty();
         if (baseUrl.isBlank()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "RECIPIENT_DIRECTORY_NOT_CONFIGURED");
         }
 
         String uriTemplate = baseUrl + (userPath.startsWith("/") ? userPath : "/" + userPath);
         try {
-            ResponseEntity<Void> response = restClient.get()
-                    .uri(uriTemplate, recipientId)
+            UserProfile profile = restClient.get()
+                    .uri(uriTemplate, userId)
                     .retrieve()
-                    .toBodilessEntity();
-            return response.getStatusCode().is2xxSuccessful();
+                    .body(UserProfile.class);
+            return Optional.ofNullable(profile);
         } catch (HttpClientErrorException.NotFound ignored) {
-            return false;
+            return Optional.empty();
         } catch (RestClientException exception) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "RECIPIENT_DIRECTORY_UNAVAILABLE", exception);
         }
