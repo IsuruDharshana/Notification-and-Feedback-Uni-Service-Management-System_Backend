@@ -1,16 +1,35 @@
 server:
-  port: ${SERVER_PORT:8082}
+  port: ${PORT:${SERVER_PORT:8082}}
+
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/communication_feedback_db}
     username: ${DB_USERNAME:group8}
     password: ${DB_PASSWORD:group8}
+
   jpa:
     hibernate.ddl-auto: validate
     open-in-view: false
-  flyway.enabled: true
-jwt.secret: ${JWT_SECRET:change-me-in-production-min-32-chars}
-notification.service-key: ${NOTIFICATION_SERVICE_KEY:change-me-in-production}
+
+  flyway:
+    enabled: true
+
+jwt:
+  secret: ${JWT_SECRET:change-me-in-production-min-32-chars}
+
+notification:
+  service-key: ${NOTIFICATION_SERVICE_KEY:change-me-in-production}
+
 user-directory:
   base-url: ${USER_DIRECTORY_BASE_URL:}
   user-path: ${USER_DIRECTORY_USER_PATH:/api/users/{userId}}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+  endpoint:
+    health:
+      show-details: never
