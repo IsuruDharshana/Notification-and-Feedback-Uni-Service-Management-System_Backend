@@ -25,4 +25,12 @@ class ApiExceptionHandlerTest {
         assertEquals(500, response.getStatusCode().value());
         assertEquals(new ApiError("INTERNAL_SERVER_ERROR"), response.getBody());
     }
+
+    @Test
+    void roleDenialIsForbiddenNotServerError() {
+        var response = handler.handleAccessDenied();
+
+        assertEquals(403, response.getStatusCode().value());
+        assertEquals(new ApiError("FORBIDDEN"), response.getBody());
+    }
 }
