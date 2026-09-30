@@ -1,10 +1,8 @@
 package com.group8.communication.security;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.ProtectedHeader;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +13,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -22,17 +22,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Base64;
+import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
-    @Bean
-    ObjectMapper jwtHeaderObjectMapper() {
-        return new ObjectMapper();
-    }
-
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http, JwtFilter jwt) throws Exception {
         return http
@@ -55,17 +50,14 @@ public class SecurityConfig {
 @Component
 class JwtFilter extends OncePerRequestFilter {
     private final JwksKeyProvider keyProvider;
-    private final ObjectMapper objectMapper;
     private final String issuer;
     private final String audience;
 
     JwtFilter(
             JwksKeyProvider keyProvider,
-            ObjectMapper objectMapper,
             @Value("${jwt.issuer}") String issuer,
             @Value("${jwt.audience}") String audience) {
         this.keyProvider = keyProvider;
-        this.objectMapper = objectMapper;
         this.issuer = issuer;
         this.audience = audience;
     }
@@ -76,35 +68,31 @@ class JwtFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
             try {
-                String token = header.substring(7);
-                String[] tokenParts = token.split("\\.");
-                if (tokenParts.length != 3) throw new IllegalArgumentException("Malformed JWT");
-                JsonNode tokenHeader = objectMapper.readTree(
-                        Base64.getUrlDecoder().decode(tokenParts[0]));
-                if (!"RS256".equals(tokenHeader.path("alg").asText())) {
-                    throw new IllegalArgumentException("Unsupported JWT algorithm");
-                }
-                String keyId = tokenHeader.path("kid").asText();
-                Jws<Claims> parsed = Jwts.parser()
-                        .verifyWith(keyProvider.keyFor(keyId))
+                Claims claims = Jwts.parser()
+                        .keyLocator(tokenHeader -> {
+                            if (!"RS256".equals(tokenHeader.getAlgorithm())
+                                    || !(tokenHeader instanceof ProtectedHeader protectedHeader)) {
+                                throw new IllegalArgumentException("Unsupported JWT algorithm");
+                            }
+                            return keyProvider.keyFor(protectedHeader.getKeyId());
+                        })
                         .requireIssuer(issuer)
                         .requireAudience(audience)
                         .build()
-                        .parseSignedClaims(token);
-                Claims claims = parsed.getPayload();
-                String subject = claims.getSubject();
-                List<org.springframework.security.core.GrantedAuthority> authorities = new java.util.ArrayList<>();
+                        .parseSignedClaims(header.substring(7))
+                        .getPayload();
+                List<GrantedAuthority> authorities = new ArrayList<>();
                 Object roles = claims.get("roles");
                 if (roles instanceof List<?> roleList) {
                     roleList.stream()
                             .filter(String.class::isInstance)
-                            .map(String.class::cast)
-                            .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + role))
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                             .forEach(authorities::add);
                 }
                 SecurityContextHolder.getContext().setAuthentication(
-                        new UsernamePasswordAuthenticationToken(subject, null, authorities));
-            } catch (Exception ignored) {
+                        new UsernamePasswordAuthenticationToken(claims.getSubject(), null, authorities));
+            } catch (Exception exception) {
+                logger.debug("Rejected bearer token: " + exception.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }
