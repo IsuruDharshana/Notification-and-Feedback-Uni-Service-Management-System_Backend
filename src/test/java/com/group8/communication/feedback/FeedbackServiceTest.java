@@ -30,7 +30,7 @@ class FeedbackServiceTest {
         when(formRepository.save(any(FeedbackForm.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         FeedbackDtos.FormResponse result = service.createForm(new FeedbackDtos.CreateFormRequest(
-                FeedbackActivityType.EVENT, UUID.randomUUID(), "Event feedback", "[{\"type\":\"rating\"}]"), "usr-organizer-001");
+                FeedbackActivityType.EVENT, UUID.randomUUID().toString(), "Event feedback", "[{\"type\":\"rating\"}]"), "usr-organizer-001");
 
         assertEquals("Event feedback", result.title());
         assertEquals(true, result.active());
@@ -41,7 +41,7 @@ class FeedbackServiceTest {
     void preventsDuplicateResponseForSameUserAndActivity() {
         UUID formId = UUID.randomUUID();
         String respondentId = "usr-student-001";
-        FeedbackForm form = new FeedbackForm(FeedbackActivityType.EVENT, UUID.randomUUID(), "Feedback", "[]", "usr-organizer-001");
+        FeedbackForm form = new FeedbackForm(FeedbackActivityType.EVENT, UUID.randomUUID().toString(), "Feedback", "[]", "usr-organizer-001");
         when(formRepository.findById(formId)).thenReturn(Optional.of(form));
         when(eligibility.canSubmit(respondentId, form)).thenReturn(true);
         when(responseRepository.existsByFormIdAndActivityIdAndRespondentId(formId, form.getActivityId(), respondentId))
@@ -58,7 +58,7 @@ class FeedbackServiceTest {
     void submitsEligibleResponseWithFivePointRating() {
         UUID formId = UUID.randomUUID();
         String respondentId = "usr-student-001";
-        FeedbackForm form = new FeedbackForm(FeedbackActivityType.SERVICE_REQUEST, UUID.randomUUID(), "Service feedback", "[]", "usr-organizer-001");
+        FeedbackForm form = new FeedbackForm(FeedbackActivityType.SERVICE_REQUEST, "REQ-2026-004", "Service feedback", "[]", "usr-organizer-001");
         when(formRepository.findById(formId)).thenReturn(Optional.of(form));
         when(eligibility.canSubmit(respondentId, form)).thenReturn(true);
         when(responseRepository.existsByFormIdAndActivityIdAndRespondentId(formId, form.getActivityId(), respondentId))
@@ -69,6 +69,7 @@ class FeedbackServiceTest {
                 formId, respondentId, new FeedbackDtos.SubmitResponseRequest(5, "Resolved quickly"));
 
         assertEquals(5, result.rating());
+        assertEquals("REQ-2026-004", result.activityId());
         assertEquals(respondentId, result.respondentId());
         verify(responseRepository).save(any(FeedbackResponse.class));
     }

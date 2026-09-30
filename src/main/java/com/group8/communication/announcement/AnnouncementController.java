@@ -3,6 +3,7 @@ package com.group8.communication.announcement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -40,7 +41,10 @@ public class AnnouncementController {
 
     @GetMapping
     public List<AnnouncementDtos.Response> visible(Authentication auth) {
-        return service.visibleForUser(userId(auth));
+        return service.visibleForUser(userId(auth), auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(authority -> authority.startsWith("ROLE_") ? authority.substring(5) : authority)
+                .toList());
     }
 
     private String userId(Authentication auth) {

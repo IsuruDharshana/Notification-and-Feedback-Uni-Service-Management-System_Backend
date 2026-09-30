@@ -1,23 +1,35 @@
 package com.group8.communication.security;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
 
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAPublicKeySpec;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Group 5 signing keys from the JWKS endpoint. Keys are cached and re-fetched only when a token
+ * arrives with an unknown kid (key rotation), at most once per {@link #MIN_REFRESH_INTERVAL}.
+ *
+ * The response is read as a Jackson 3 {@link JsonNode}: Spring Boot 4's RestClient converts JSON
+ * with Jackson 3, so asking it for a Jackson 2 (com.fasterxml) JsonNode fails and no key is ever loaded.
+ */
 @Component
 public class JwksKeyProvider {
+    static final Duration MIN_REFRESH_INTERVAL = Duration.ofSeconds(30);
+
     private final RestClient restClient;
     private final String jwksUrl;
     private volatile Map<String, RSAPublicKey> cachedKeys = Map.of();
+    private volatile Instant lastRefresh = Instant.EPOCH;
 
     public JwksKeyProvider(
             RestClient.Builder restClientBuilder,
@@ -36,8 +48,11 @@ public class JwksKeyProvider {
         synchronized (this) {
             key = cachedKeys.get(keyId);
             if (key != null) return key;
-            cachedKeys = loadKeys();
-            key = cachedKeys.get(keyId);
+            if (cachedKeys.isEmpty() || Instant.now().isAfter(lastRefresh.plus(MIN_REFRESH_INTERVAL))) {
+                cachedKeys = loadKeys();
+                lastRefresh = Instant.now();
+                key = cachedKeys.get(keyId);
+            }
         }
         if (key == null) throw new IllegalArgumentException("JWT key id is unknown");
         return key;
@@ -51,24 +66,27 @@ public class JwksKeyProvider {
 
         Map<String, RSAPublicKey> result = new HashMap<>();
         for (JsonNode jwk : document.path("keys")) {
-            if (!"RSA".equals(jwk.path("kty").asText())
-                    || jwk.path("kid").asText().isBlank()
-                    || jwk.path("n").asText().isBlank()
-                    || jwk.path("e").asText().isBlank()) {
+            String kid = text(jwk, "kid");
+            String modulus = text(jwk, "n");
+            String exponent = text(jwk, "e");
+            if (!"RSA".equals(text(jwk, "kty")) || kid.isBlank() || modulus.isBlank() || exponent.isBlank()) {
                 continue;
             }
             try {
-                byte[] modulusBytes = Base64.getUrlDecoder().decode(jwk.path("n").asText());
-                byte[] exponentBytes = Base64.getUrlDecoder().decode(jwk.path("e").asText());
                 RSAPublicKey publicKey = (RSAPublicKey) KeyFactory.getInstance("RSA")
                         .generatePublic(new RSAPublicKeySpec(
-                                new BigInteger(1, modulusBytes),
-                                new BigInteger(1, exponentBytes)));
-                result.put(jwk.path("kid").asText(), publicKey);
+                                new BigInteger(1, Base64.getUrlDecoder().decode(modulus)),
+                                new BigInteger(1, Base64.getUrlDecoder().decode(exponent))));
+                result.put(kid, publicKey);
             } catch (Exception exception) {
                 throw new IllegalArgumentException("Invalid RSA key in JWKS", exception);
             }
         }
         return Map.copyOf(result);
+    }
+
+    private static String text(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        return value != null && value.isString() ? value.stringValue() : "";
     }
 }

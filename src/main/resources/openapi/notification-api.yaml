@@ -572,7 +572,8 @@ components:
           enum: [EVENT, SERVICE_REQUEST]
         activityId:
           type: string
-          format: uuid
+          maxLength: 64
+          description: Event id (UUID) or Group 7 service request id, e.g. REQ-2026-004
         title:
           type: string
           maxLength: 200
@@ -600,7 +601,8 @@ components:
           enum: [EVENT, SERVICE_REQUEST]
         activityId:
           type: string
-          format: uuid
+          maxLength: 64
+          description: Event id (UUID) or Group 7 service request id, e.g. REQ-2026-004
         createdBy:
           type: string
           maxLength: 64
@@ -648,7 +650,8 @@ components:
           format: uuid
         activityId:
           type: string
-          format: uuid
+          maxLength: 64
+          description: Event id (UUID) or Group 7 service request id, e.g. REQ-2026-004
         respondentId:
           type: string
           maxLength: 64

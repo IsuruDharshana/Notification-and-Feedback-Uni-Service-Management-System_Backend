@@ -28,9 +28,8 @@ public class FeedbackForm {
     @Column(name = "activity_type", nullable = false, length = 30)
     private FeedbackActivityType activityType;
 
-    @Column(name = "activity_id", nullable = false, columnDefinition = "char(36)")
-    @JdbcTypeCode(SqlTypes.CHAR)
-    private UUID activityId;
+    @Column(name = "activity_id", nullable = false, length = 64)
+    private String activityId;
 
     @Column(name = "created_by", nullable = false, length = 64)
     private String createdBy;
@@ -53,7 +52,7 @@ public class FeedbackForm {
     protected FeedbackForm() {
     }
 
-    public FeedbackForm(FeedbackActivityType activityType, UUID activityId, String title, String questionsJson, String createdBy) {
+    public FeedbackForm(FeedbackActivityType activityType, String activityId, String title, String questionsJson, String createdBy) {
         this.id = UUID.randomUUID();
         this.activityType = activityType;
         this.activityId = activityId;
@@ -67,7 +66,7 @@ public class FeedbackForm {
 
     public UUID getId() { return id; }
     public FeedbackActivityType getActivityType() { return activityType; }
-    public UUID getActivityId() { return activityId; }
+    public String getActivityId() { return activityId; }
     public String getCreatedBy() { return createdBy; }
     public String getTitle() { return title; }
     public String getQuestionsJson() { return questionsJson; }
