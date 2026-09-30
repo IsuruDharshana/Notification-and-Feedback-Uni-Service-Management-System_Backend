@@ -35,7 +35,7 @@ public class NotificationService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "NOTIFICATION_RECIPIENT_NOT_FOUND");
         }
         Notification notification = new Notification(request.recipientId().trim(), request.type(), request.message().trim(), request.relatedType(),
-                request.relatedId(), request.sourceService().trim(), request.idempotencyKey().trim());
+                request.relatedId() == null ? null : request.relatedId().trim(), request.sourceService().trim(), request.idempotencyKey().trim());
         return new CreateResult(repository.save(notification), false);
     }
     public Notification create(NotificationDtos.TriggerRequest request) {

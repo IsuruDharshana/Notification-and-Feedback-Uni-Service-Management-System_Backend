@@ -3,6 +3,7 @@ package com.group8.communication.feedback;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -20,6 +21,7 @@ public class FeedbackController {
 
     @PostMapping("/forms")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('EVENT_ORGANIZER', 'ADMIN', 'ADMINISTRATIVE_STAFF')")
     public FeedbackDtos.FormResponse createForm(Authentication auth, @Valid @RequestBody FeedbackDtos.CreateFormRequest request) {
         return service.createForm(request, userId(auth));
     }
@@ -48,11 +50,10 @@ public class FeedbackController {
         return service.listResponses(formId, userId(auth));
     }
 
-    private UUID userId(Authentication auth) {
-        try {
-            return UUID.fromString(auth.getName());
-        } catch (Exception exception) {
+    private String userId(Authentication auth) {
+        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "INVALID_USER_ID");
         }
+        return auth.getName();
     }
 }

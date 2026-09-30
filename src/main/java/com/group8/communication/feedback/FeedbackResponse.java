@@ -5,6 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -17,16 +19,19 @@ import java.util.UUID;
 public class FeedbackResponse {
     @Id
     @Column(columnDefinition = "char(36)")
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID id;
 
     @Column(name = "form_id", nullable = false, columnDefinition = "char(36)")
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID formId;
 
     @Column(name = "activity_id", nullable = false, columnDefinition = "char(36)")
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID activityId;
 
-    @Column(name = "respondent_id", nullable = false, columnDefinition = "char(36)")
-    private UUID respondentId;
+    @Column(name = "respondent_id", nullable = false, length = 64)
+    private String respondentId;
 
     @Column(nullable = false)
     private int rating;
@@ -40,7 +45,7 @@ public class FeedbackResponse {
     protected FeedbackResponse() {
     }
 
-    public FeedbackResponse(UUID formId, UUID activityId, UUID respondentId, int rating, String comment) {
+    public FeedbackResponse(UUID formId, UUID activityId, String respondentId, int rating, String comment) {
         this.id = UUID.randomUUID();
         this.formId = formId;
         this.activityId = activityId;
@@ -53,7 +58,7 @@ public class FeedbackResponse {
     public UUID getId() { return id; }
     public UUID getFormId() { return formId; }
     public UUID getActivityId() { return activityId; }
-    public UUID getRespondentId() { return respondentId; }
+    public String getRespondentId() { return respondentId; }
     public int getRating() { return rating; }
     public String getComment() { return comment; }
     public LocalDateTime getCreatedAt() { return createdAt; }

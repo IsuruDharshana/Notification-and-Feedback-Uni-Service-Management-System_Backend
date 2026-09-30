@@ -10,6 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,6 +21,7 @@ import java.util.UUID;
 public class Announcement {
     @Id
     @Column(columnDefinition = "char(36)")
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID id;
 
     @Column(nullable = false, length = 200)
@@ -31,8 +34,8 @@ public class Announcement {
     @Column(nullable = false, length = 20)
     private AnnouncementStatus status;
 
-    @Column(name = "created_by", nullable = false, columnDefinition = "char(36)")
-    private UUID createdBy;
+    @Column(name = "created_by", nullable = false, length = 64)
+    private String createdBy;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = false)
     @JoinColumn(name = "audience_rule_id", nullable = false, unique = true, columnDefinition = "char(36)")
@@ -50,7 +53,7 @@ public class Announcement {
     protected Announcement() {
     }
 
-    public Announcement(String title, String content, UUID createdBy, AudienceRule audienceRule) {
+    public Announcement(String title, String content, String createdBy, AudienceRule audienceRule) {
         this.id = UUID.randomUUID();
         this.title = title;
         this.content = content;
@@ -65,7 +68,7 @@ public class Announcement {
     public String getTitle() { return title; }
     public String getContent() { return content; }
     public AnnouncementStatus getStatus() { return status; }
-    public UUID getCreatedBy() { return createdBy; }
+    public String getCreatedBy() { return createdBy; }
     public AudienceRule getAudienceRule() { return audienceRule; }
     public LocalDateTime getPublishedAt() { return publishedAt; }
     public LocalDateTime getCreatedAt() { return createdAt; }

@@ -7,6 +7,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,6 +21,7 @@ import java.util.UUID;
 public class FeedbackForm {
     @Id
     @Column(columnDefinition = "char(36)")
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID id;
 
     @Enumerated(EnumType.STRING)
@@ -26,10 +29,11 @@ public class FeedbackForm {
     private FeedbackActivityType activityType;
 
     @Column(name = "activity_id", nullable = false, columnDefinition = "char(36)")
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID activityId;
 
-    @Column(name = "created_by", nullable = false, columnDefinition = "char(36)")
-    private UUID createdBy;
+    @Column(name = "created_by", nullable = false, length = 64)
+    private String createdBy;
 
     @Column(nullable = false, length = 200)
     private String title;
@@ -49,7 +53,7 @@ public class FeedbackForm {
     protected FeedbackForm() {
     }
 
-    public FeedbackForm(FeedbackActivityType activityType, UUID activityId, String title, String questionsJson, UUID createdBy) {
+    public FeedbackForm(FeedbackActivityType activityType, UUID activityId, String title, String questionsJson, String createdBy) {
         this.id = UUID.randomUUID();
         this.activityType = activityType;
         this.activityId = activityId;
@@ -64,7 +68,7 @@ public class FeedbackForm {
     public UUID getId() { return id; }
     public FeedbackActivityType getActivityType() { return activityType; }
     public UUID getActivityId() { return activityId; }
-    public UUID getCreatedBy() { return createdBy; }
+    public String getCreatedBy() { return createdBy; }
     public String getTitle() { return title; }
     public String getQuestionsJson() { return questionsJson; }
     public boolean isActive() { return active; }

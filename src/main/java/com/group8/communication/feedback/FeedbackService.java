@@ -21,7 +21,7 @@ public class FeedbackService {
         this.eligibility = eligibility;
     }
 
-    public FeedbackDtos.FormResponse createForm(FeedbackDtos.CreateFormRequest request, UUID createdBy) {
+    public FeedbackDtos.FormResponse createForm(FeedbackDtos.CreateFormRequest request, String createdBy) {
         if (createdBy == null || request == null || request.activityType() == null || request.activityId() == null
                 || request.title() == null || request.title().isBlank()
                 || request.questionsJson() == null || request.questionsJson().isBlank()) {
@@ -45,7 +45,7 @@ public class FeedbackService {
                 .toList();
     }
 
-    public FeedbackDtos.ResponseItem submit(UUID formId, UUID respondentId, FeedbackDtos.SubmitResponseRequest request) {
+    public FeedbackDtos.ResponseItem submit(UUID formId, String respondentId, FeedbackDtos.SubmitResponseRequest request) {
         if (respondentId == null || request == null || request.rating() < 1 || request.rating() > 5) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_FEEDBACK_RESPONSE_REQUEST");
         }
@@ -64,7 +64,7 @@ public class FeedbackService {
         return FeedbackDtos.ResponseItem.from(responseRepository.save(response));
     }
 
-    public List<FeedbackDtos.ResponseItem> listResponses(UUID formId, UUID actorId) {
+    public List<FeedbackDtos.ResponseItem> listResponses(UUID formId, String actorId) {
         FeedbackForm form = findForm(formId);
         if (actorId == null || !form.getCreatedBy().equals(actorId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FEEDBACK_RESPONSES_FORBIDDEN");

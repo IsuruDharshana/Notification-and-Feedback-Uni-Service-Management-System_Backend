@@ -17,16 +17,19 @@ spring:
     enabled: true
 
 jwt:
-  secret: ${JWT_SECRET}
+  jwks-url: ${GROUP5_JWKS_URL:https://university-identity-service.onrender.com/.well-known/jwks.json}
+  issuer: ${GROUP5_JWT_ISSUER:university-identity-service}
+  audience: ${GROUP5_JWT_AUDIENCE:university-services-platform}
 
 notification:
   service-key: ${NOTIFICATIONS_SERVICE_KEY:${NOTIFICATION_SERVICE_KEY:}}
 
 user-directory:
   base-url: ${USER_DIRECTORY_BASE_URL:}
-  user-path: ${USER_DIRECTORY_USER_PATH:/api/users/{userId}}
+  user-path: ${USER_DIRECTORY_USER_PATH:/api/v1/validation/users/{userId}}
   eligibility-path: ${USER_DIRECTORY_ELIGIBILITY_PATH:/api/v1/validation/users/{userId}/eligibility}
   required-role: ${USER_DIRECTORY_REQUIRED_ROLE:}
+  access-token: ${USER_DIRECTORY_ACCESS_TOKEN:}
 
 facility-directory:
   base-url: ${FACILITY_DIRECTORY_BASE_URL:}
@@ -34,7 +37,7 @@ facility-directory:
 
 group7-feedback:
   base-url: ${GROUP7_FEEDBACK_BASE_URL:}
-  eligibility-path: ${GROUP7_FEEDBACK_ELIGIBILITY_PATH:/api/feedback-eligibility/{activityType}/{activityId}?userId={userId}}
+  eligibility-path: ${GROUP7_FEEDBACK_ELIGIBILITY_PATH:/api/work-orders/by-request/{activityId}}
 
 management:
   endpoints:

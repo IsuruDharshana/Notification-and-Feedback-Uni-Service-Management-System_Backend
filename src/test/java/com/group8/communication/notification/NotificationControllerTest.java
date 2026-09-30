@@ -25,7 +25,7 @@ class NotificationControllerTest {
     void triggerRequiresTheConfiguredServiceKey() {
         NotificationDtos.TriggerRequest request = new NotificationDtos.TriggerRequest(
                 "usr-student-001", NotificationType.EVENT_UPDATED, "Event changed", RelatedType.EVENT,
-                UUID.randomUUID(), "event-service", "event-001-updated");
+                UUID.randomUUID().toString(), "event-service", "event-001-updated");
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> controller.trigger("wrong-key", request));

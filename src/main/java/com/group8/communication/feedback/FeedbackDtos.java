@@ -26,7 +26,7 @@ public final class FeedbackDtos {
             UUID id,
             FeedbackActivityType activityType,
             UUID activityId,
-            UUID createdBy,
+            String createdBy,
             String title,
             String questionsJson,
             boolean active,
@@ -42,7 +42,7 @@ public final class FeedbackDtos {
             UUID id,
             UUID formId,
             UUID activityId,
-            UUID respondentId,
+            String respondentId,
             int rating,
             String comment,
             LocalDateTime createdAt) {

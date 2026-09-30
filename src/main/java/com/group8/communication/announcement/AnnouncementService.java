@@ -20,7 +20,7 @@ public class AnnouncementService {
         this.userDirectory = userDirectory;
     }
 
-    public Announcement create(AnnouncementDtos.CreateRequest request, UUID createdBy) {
+    public Announcement create(AnnouncementDtos.CreateRequest request, String createdBy) {
         if (createdBy == null || request == null || request.audienceType() == null
                 || request.title() == null || request.title().isBlank()
                 || request.content() == null || request.content().isBlank()) {
@@ -34,7 +34,7 @@ public class AnnouncementService {
                 new AudienceRule(request.audienceType(), ruleValue)));
     }
 
-    public AnnouncementDtos.Response publish(UUID id, UUID actorId) {
+    public AnnouncementDtos.Response publish(UUID id, String actorId) {
         Announcement announcement = find(id);
         verifyOwner(announcement, actorId);
         if (announcement.getStatus() != AnnouncementStatus.DRAFT) {
@@ -44,7 +44,7 @@ public class AnnouncementService {
         return AnnouncementDtos.Response.from(repository.save(announcement));
     }
 
-    public AnnouncementDtos.Response archive(UUID id, UUID actorId) {
+    public AnnouncementDtos.Response archive(UUID id, String actorId) {
         Announcement announcement = find(id);
         verifyOwner(announcement, actorId);
         if (announcement.getStatus() != AnnouncementStatus.PUBLISHED) {
@@ -62,8 +62,8 @@ public class AnnouncementService {
                 .toList();
     }
 
-    public List<AnnouncementDtos.Response> visibleForUser(UUID userId) {
-        UserProfile profile = userDirectory.findById(userId.toString())
+    public List<AnnouncementDtos.Response> visibleForUser(String userId) {
+        UserProfile profile = userDirectory.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND"));
         return repository.findByStatusOrderByPublishedAtDesc(AnnouncementStatus.PUBLISHED).stream()
                 .filter(announcement -> isVisible(announcement.getAudienceRule(), profile))
@@ -110,7 +110,7 @@ public class AnnouncementService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ANNOUNCEMENT_NOT_FOUND"));
     }
 
-    private void verifyOwner(Announcement announcement, UUID actorId) {
+    private void verifyOwner(Announcement announcement, String actorId) {
         if (actorId == null || !announcement.getCreatedBy().equals(actorId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "ANNOUNCEMENT_FORBIDDEN");
         }

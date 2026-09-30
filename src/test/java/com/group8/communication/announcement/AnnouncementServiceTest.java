@@ -26,7 +26,7 @@ class AnnouncementServiceTest {
 
     @Test
     void createsAllAudienceDraft() {
-        UUID creator = UUID.randomUUID();
+        String creator = "usr-admin-001";
         when(repository.save(any(Announcement.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Announcement result = service.create(new AnnouncementDtos.CreateRequest(
@@ -48,9 +48,9 @@ class AnnouncementServiceTest {
 
     @Test
     void visibleReturnsAllAndMatchingTargetOnly() {
-        Announcement all = new Announcement("All", "Everyone", UUID.randomUUID(), new AudienceRule(AudienceType.ALL, null));
-        Announcement student = new Announcement("Students", "Students", UUID.randomUUID(), new AudienceRule(AudienceType.ROLE, "STUDENT"));
-        Announcement staff = new Announcement("Staff", "Staff", UUID.randomUUID(), new AudienceRule(AudienceType.ROLE, "STAFF"));
+        Announcement all = new Announcement("All", "Everyone", "usr-admin-001", new AudienceRule(AudienceType.ALL, null));
+        Announcement student = new Announcement("Students", "Students", "usr-admin-001", new AudienceRule(AudienceType.ROLE, "STUDENT"));
+        Announcement staff = new Announcement("Staff", "Staff", "usr-admin-001", new AudienceRule(AudienceType.ROLE, "STAFF"));
         all.publish(java.time.LocalDateTime.now());
         student.publish(java.time.LocalDateTime.now());
         staff.publish(java.time.LocalDateTime.now());
