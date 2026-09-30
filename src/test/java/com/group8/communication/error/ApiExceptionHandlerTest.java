@@ -17,4 +17,12 @@ class ApiExceptionHandlerTest {
         assertEquals(503, response.getStatusCode().value());
         assertEquals(new ApiError("GROUP7_ELIGIBILITY_UNAVAILABLE"), response.getBody());
     }
+
+    @Test
+    void hidesUnexpectedExceptionDetailsFromClient() {
+        var response = handler.handleUnexpected(new IllegalStateException("sensitive internal detail"));
+
+        assertEquals(500, response.getStatusCode().value());
+        assertEquals(new ApiError("INTERNAL_SERVER_ERROR"), response.getBody());
+    }
 }
