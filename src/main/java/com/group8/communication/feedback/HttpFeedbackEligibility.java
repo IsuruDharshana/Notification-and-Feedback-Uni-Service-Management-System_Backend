@@ -1,5 +1,6 @@
 package com.group8.communication.feedback;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -19,34 +20,37 @@ public class HttpFeedbackEligibility implements FeedbackEligibility {
     public HttpFeedbackEligibility(
             RestClient.Builder restClientBuilder,
             @Value("${group7-feedback.base-url:}") String baseUrl,
-            @Value("${group7-feedback.eligibility-path:/api/feedback-eligibility/{activityType}/{activityId}?userId={userId}}") String eligibilityPath) {
+            @Value("${group7-feedback.eligibility-path:/api/work-orders/by-request/{activityId}}") String eligibilityPath) {
         this.restClient = restClientBuilder.build();
         this.baseUrl = baseUrl == null ? "" : baseUrl.trim();
         this.eligibilityPath = eligibilityPath == null || eligibilityPath.isBlank()
-                ? "/api/feedback-eligibility/{activityType}/{activityId}?userId={userId}" : eligibilityPath;
+                ? "/api/work-orders/by-request/{activityId}" : eligibilityPath;
     }
 
     @Override
-    public boolean canSubmit(UUID respondentId, FeedbackForm form) {
+    public boolean canSubmit(String respondentId, FeedbackForm form) {
         // Sprint 2 synthetic mode remains available until Group 7 publishes its endpoint.
         if (baseUrl.isBlank()) return true;
 
         String uriTemplate = baseUrl + (eligibilityPath.startsWith("/") ? eligibilityPath : "/" + eligibilityPath);
         try {
-            EligibilityResponse response = restClient.get()
-                    .uri(uriTemplate, form.getActivityType().name(), form.getActivityId(), respondentId)
+            JsonNode response = restClient.get()
+                    .uri(uriTemplate, form.getActivityId())
                     .retrieve()
-                    .body(EligibilityResponse.class);
+                    .body(JsonNode.class);
             if (response == null) {
                 throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "GROUP7_INVALID_ELIGIBILITY_RESPONSE");
             }
-            return response.eligible();
+            JsonNode data = response.hasNonNull("data") ? response.get("data") : response;
+            JsonNode eligible = data.get("eligible");
+            if (eligible == null || !eligible.isBoolean()) {
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "GROUP7_INVALID_ELIGIBILITY_RESPONSE");
+            }
+            return eligible.booleanValue();
         } catch (HttpClientErrorException.NotFound exception) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "FEEDBACK_ACTIVITY_NOT_FOUND", exception);
         } catch (RestClientException exception) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "GROUP7_ELIGIBILITY_UNAVAILABLE", exception);
         }
     }
-
-    private record EligibilityResponse(boolean eligible) {}
 }

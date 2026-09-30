@@ -394,7 +394,7 @@ components:
           $ref: '#/components/schemas/RelatedType'
         relatedId:
           type: string
-          format: uuid
+          maxLength: 128
           nullable: true
         sourceService:
           type: string
@@ -430,7 +430,7 @@ components:
           $ref: '#/components/schemas/RelatedType'
         relatedId:
           type: string
-          format: uuid
+          maxLength: 128
           nullable: true
         sourceService:
           type: string
@@ -488,6 +488,8 @@ components:
         - REGISTRATION_CANCELLED
         - EVENT_CANCELLED
         - EVENT_UPDATED
+        - RESERVATION_STATUS
+        - SERVICE_REQUEST_STATUS
 
     AudienceType:
       type: string
@@ -540,7 +542,7 @@ components:
           enum: [DRAFT, PUBLISHED, ARCHIVED]
         createdBy:
           type: string
-          format: uuid
+          maxLength: 64
         audienceType:
           $ref: '#/components/schemas/AudienceType'
         ruleValue:
@@ -601,7 +603,7 @@ components:
           format: uuid
         createdBy:
           type: string
-          format: uuid
+          maxLength: 64
         title:
           type: string
         questionsJson:
@@ -649,7 +651,7 @@ components:
           format: uuid
         respondentId:
           type: string
-          format: uuid
+          maxLength: 64
         rating:
           type: integer
         comment:

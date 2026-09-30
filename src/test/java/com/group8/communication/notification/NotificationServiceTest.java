@@ -49,7 +49,7 @@ class NotificationServiceTest {
         UUID relatedId = UUID.randomUUID();
         NotificationDtos.TriggerRequest request = new NotificationDtos.TriggerRequest(
                 recipientId, NotificationType.REGISTRATION_CONFIRMED, "  Reservation approved.  ",
-                RelatedType.REGISTRATION, relatedId, "event-service", "registration-001-confirmed");
+                RelatedType.REGISTRATION, relatedId.toString(), "event-service", "registration-001-confirmed");
         when(repository.save(any(Notification.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Notification result = service.create(request);
@@ -69,7 +69,7 @@ class NotificationServiceTest {
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> service.create(new NotificationDtos.TriggerRequest(
                         "usr-student-001", NotificationType.EVENT_UPDATED, "   ", RelatedType.EVENT,
-                        UUID.randomUUID(), "event-service", "event-001-updated")));
+                        UUID.randomUUID().toString(), "event-service", "event-001-updated")));
 
         assertEquals(400, exception.getStatusCode().value());
         verifyNoMoreInteractions(repository);
@@ -82,7 +82,7 @@ class NotificationServiceTest {
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> service.create(new NotificationDtos.TriggerRequest(
-                        recipientId, NotificationType.EVENT_UPDATED, "Message", RelatedType.EVENT, UUID.randomUUID(),
+                        recipientId, NotificationType.EVENT_UPDATED, "Message", RelatedType.EVENT, UUID.randomUUID().toString(),
                         "event-service", "event-404-updated")));
 
         assertEquals(404, exception.getStatusCode().value());
@@ -95,7 +95,7 @@ class NotificationServiceTest {
     void findMineUsesUnreadRepositoryAndNewestFirstOrdering() {
         String recipientId = "usr-student-001";
         Notification notification = new Notification(recipientId, NotificationType.EVENT_UPDATED, "Unread",
-                RelatedType.EVENT, null, "event-service", "event-001-updated");
+                RelatedType.EVENT, (String) null, "event-service", "event-001-updated");
         when(repository.findByRecipientIdAndReadFalse(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(notification)));
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
@@ -129,7 +129,7 @@ class NotificationServiceTest {
     @Test
     void markReadRejectsNotificationOwnedByAnotherUser() {
         Notification notification = new Notification("usr-student-002", NotificationType.EVENT_UPDATED, "Private",
-                RelatedType.ANNOUNCEMENT, null, "event-service", "announcement-001-updated");
+                RelatedType.ANNOUNCEMENT, (String) null, "event-service", "announcement-001-updated");
         when(repository.findById(notification.getId())).thenReturn(Optional.of(notification));
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,

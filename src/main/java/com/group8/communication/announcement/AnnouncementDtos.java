@@ -21,7 +21,7 @@ public final class AnnouncementDtos {
             String title,
             String content,
             AnnouncementStatus status,
-            UUID createdBy,
+            String createdBy,
             AudienceType audienceType,
             String ruleValue,
             LocalDateTime publishedAt,
