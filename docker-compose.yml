@@ -31,10 +31,15 @@ services:
       DB_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-communication_feedback_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USERNAME: ${MYSQL_USER:-group8}
       DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
-      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       NOTIFICATIONS_SERVICE_KEY: ${NOTIFICATIONS_SERVICE_KEY:?Set NOTIFICATIONS_SERVICE_KEY in .env}
+      GROUP5_JWKS_URL: ${GROUP5_JWKS_URL:-https://university-identity-service.onrender.com/.well-known/jwks.json}
+      GROUP5_JWT_ISSUER: ${GROUP5_JWT_ISSUER:-university-identity-service}
+      GROUP5_JWT_AUDIENCE: ${GROUP5_JWT_AUDIENCE:-university-services-platform}
       USER_DIRECTORY_BASE_URL: ${USER_DIRECTORY_BASE_URL:-}
-      USER_DIRECTORY_USER_PATH: ${USER_DIRECTORY_USER_PATH:-/api/users/{userId}}
+      USER_DIRECTORY_USER_PATH: ${USER_DIRECTORY_USER_PATH:-/api/v1/validation/users/{userId}}
+      USER_DIRECTORY_ELIGIBILITY_PATH: ${USER_DIRECTORY_ELIGIBILITY_PATH:-/api/v1/validation/users/{userId}/eligibility}
+      USER_DIRECTORY_REQUIRED_ROLE: ${USER_DIRECTORY_REQUIRED_ROLE:-}
+      USER_DIRECTORY_ACCESS_TOKEN: ${USER_DIRECTORY_ACCESS_TOKEN:-}
       FACILITY_DIRECTORY_BASE_URL: ${FACILITY_DIRECTORY_BASE_URL:-}
       FACILITY_DIRECTORY_VENUE_PATH: ${FACILITY_DIRECTORY_VENUE_PATH:-/api/facilities/{venueId}}
       GROUP7_FEEDBACK_BASE_URL: ${GROUP7_FEEDBACK_BASE_URL:-}
