@@ -22,15 +22,17 @@ public class FeedbackService {
     }
 
     public FeedbackDtos.FormResponse createForm(FeedbackDtos.CreateFormRequest request, String createdBy) {
-        if (createdBy == null || request == null || request.activityType() == null || request.activityId() == null
+        if (createdBy == null || request == null || request.activityType() == null
+                || request.activityId() == null || request.activityId().isBlank()
                 || request.title() == null || request.title().isBlank()
                 || request.questionsJson() == null || request.questionsJson().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_FEEDBACK_FORM_REQUEST");
         }
-        if (formRepository.findByActivityTypeAndActivityId(request.activityType(), request.activityId()).isPresent()) {
+        String activityId = request.activityId().trim();
+        if (formRepository.findByActivityTypeAndActivityId(request.activityType(), activityId).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "FEEDBACK_FORM_ALREADY_EXISTS");
         }
-        FeedbackForm form = new FeedbackForm(request.activityType(), request.activityId(),
+        FeedbackForm form = new FeedbackForm(request.activityType(), activityId,
                 request.title().trim(), request.questionsJson().trim(), createdBy);
         return FeedbackDtos.FormResponse.from(formRepository.save(form));
     }

@@ -14,7 +14,7 @@ public final class FeedbackDtos {
 
     public record CreateFormRequest(
             @NotNull FeedbackActivityType activityType,
-            @NotNull UUID activityId,
+            @NotBlank @Size(max = 64) String activityId,
             @NotBlank @Size(max = 200) String title,
             @NotBlank @Size(max = 20000) String questionsJson) {}
 
@@ -25,7 +25,7 @@ public final class FeedbackDtos {
     public record FormResponse(
             UUID id,
             FeedbackActivityType activityType,
-            UUID activityId,
+            String activityId,
             String createdBy,
             String title,
             String questionsJson,
@@ -41,7 +41,7 @@ public final class FeedbackDtos {
     public record ResponseItem(
             UUID id,
             UUID formId,
-            UUID activityId,
+            String activityId,
             String respondentId,
             int rating,
             String comment,

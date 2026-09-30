@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface FeedbackResponseRepository extends JpaRepository<FeedbackResponse, UUID> {
-    boolean existsByFormIdAndActivityIdAndRespondentId(UUID formId, UUID activityId, String respondentId);
+    boolean existsByFormIdAndActivityIdAndRespondentId(UUID formId, String activityId, String respondentId);
     List<FeedbackResponse> findByFormIdOrderByCreatedAtDesc(UUID formId);
 
     @Query("select avg(response.rating) from FeedbackResponse response")

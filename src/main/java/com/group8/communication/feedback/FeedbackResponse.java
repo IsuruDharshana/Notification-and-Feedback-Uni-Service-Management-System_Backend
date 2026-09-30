@@ -26,9 +26,8 @@ public class FeedbackResponse {
     @JdbcTypeCode(SqlTypes.CHAR)
     private UUID formId;
 
-    @Column(name = "activity_id", nullable = false, columnDefinition = "char(36)")
-    @JdbcTypeCode(SqlTypes.CHAR)
-    private UUID activityId;
+    @Column(name = "activity_id", nullable = false, length = 64)
+    private String activityId;
 
     @Column(name = "respondent_id", nullable = false, length = 64)
     private String respondentId;
@@ -45,7 +44,7 @@ public class FeedbackResponse {
     protected FeedbackResponse() {
     }
 
-    public FeedbackResponse(UUID formId, UUID activityId, String respondentId, int rating, String comment) {
+    public FeedbackResponse(UUID formId, String activityId, String respondentId, int rating, String comment) {
         this.id = UUID.randomUUID();
         this.formId = formId;
         this.activityId = activityId;
@@ -57,7 +56,7 @@ public class FeedbackResponse {
 
     public UUID getId() { return id; }
     public UUID getFormId() { return formId; }
-    public UUID getActivityId() { return activityId; }
+    public String getActivityId() { return activityId; }
     public String getRespondentId() { return respondentId; }
     public int getRating() { return rating; }
     public String getComment() { return comment; }

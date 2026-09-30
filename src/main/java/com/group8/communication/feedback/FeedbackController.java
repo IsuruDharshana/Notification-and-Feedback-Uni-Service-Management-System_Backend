@@ -21,7 +21,7 @@ public class FeedbackController {
 
     @PostMapping("/forms")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('EVENT_ORGANIZER', 'ADMIN', 'ADMINISTRATIVE_STAFF')")
+    @PreAuthorize("hasAnyRole('EVENT_ORGANIZER', 'ACADEMIC_STAFF', 'ADMIN', 'ADMINISTRATIVE_STAFF')")
     public FeedbackDtos.FormResponse createForm(Authentication auth, @Valid @RequestBody FeedbackDtos.CreateFormRequest request) {
         return service.createForm(request, userId(auth));
     }
