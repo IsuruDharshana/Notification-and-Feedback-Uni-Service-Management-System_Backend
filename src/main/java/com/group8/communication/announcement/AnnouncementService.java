@@ -2,16 +2,22 @@ package com.group8.communication.announcement;
 
 import com.group8.communication.integration.UserDirectory;
 import com.group8.communication.integration.UserProfile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class AnnouncementService {
+    private static final Logger log = LoggerFactory.getLogger(AnnouncementService.class);
     private final AnnouncementRepository repository;
     private final UserDirectory userDirectory;
 
@@ -62,13 +68,37 @@ public class AnnouncementService {
                 .toList();
     }
 
-    public List<AnnouncementDtos.Response> visibleForUser(String userId) {
-        UserProfile profile = userDirectory.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND"));
+    /**
+     * Announcements the user may see. Roles come from the token and from Group 5; department and faculty
+     * come from Group 5's affiliation. If Group 5 is not configured or unavailable, only ALL and ROLE
+     * announcements can be matched (from the token roles) instead of failing the whole list.
+     */
+    public List<AnnouncementDtos.Response> visibleForUser(String userId, Collection<String> tokenRoles) {
+        UserProfile profile = profileFor(userId, tokenRoles == null ? List.of() : tokenRoles);
         return repository.findByStatusOrderByPublishedAtDesc(AnnouncementStatus.PUBLISHED).stream()
                 .filter(announcement -> isVisible(announcement.getAudienceRule(), profile))
                 .map(AnnouncementDtos.Response::from)
                 .toList();
+    }
+
+    private UserProfile profileFor(String userId, Collection<String> tokenRoles) {
+        UserProfile directoryProfile = null;
+        if (userDirectory.isConfigured()) {
+            try {
+                directoryProfile = userDirectory.findById(userId)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND"));
+            } catch (ResponseStatusException exception) {
+                if (exception.getStatusCode().value() != HttpStatus.SERVICE_UNAVAILABLE.value()) throw exception;
+                log.warn("Group 5 unavailable ({}); matching announcements on token roles only", exception.getReason());
+            }
+        }
+        Set<String> roles = new LinkedHashSet<>(tokenRoles);
+        if (directoryProfile == null) {
+            return new UserProfile(userId, List.copyOf(roles), null, null, null);
+        }
+        roles.addAll(directoryProfile.roles());
+        return new UserProfile(userId, List.copyOf(roles), directoryProfile.department(),
+                directoryProfile.faculty(), directoryProfile.serviceUnit());
     }
 
     private boolean isVisible(AudienceRule rule, AudienceType audienceType, String audienceValue) {
@@ -81,15 +111,14 @@ public class AnnouncementService {
     }
 
     private boolean isVisible(AudienceRule rule, UserProfile profile) {
-        if (rule.getAudienceType() == AudienceType.ALL) return true;
-        String profileValue = switch (rule.getAudienceType()) {
-            case ROLE -> profile.role();
-            case DEPARTMENT -> profile.department();
-            case FACULTY -> profile.faculty();
-            case SERVICE_UNIT -> profile.serviceUnit();
-            case ALL -> null;
+        String ruleValue = rule.getRuleValue();
+        return switch (rule.getAudienceType()) {
+            case ALL -> true;
+            case ROLE -> profile.roles().stream().anyMatch(role -> role.equalsIgnoreCase(ruleValue));
+            case DEPARTMENT -> ruleValue != null && ruleValue.equalsIgnoreCase(profile.department());
+            case FACULTY -> ruleValue != null && ruleValue.equalsIgnoreCase(profile.faculty());
+            case SERVICE_UNIT -> ruleValue != null && ruleValue.equalsIgnoreCase(profile.serviceUnit());
         };
-        return profileValue != null && profileValue.equalsIgnoreCase(rule.getRuleValue());
     }
 
     private String normalizeRuleValue(AudienceType type, String value) {
