@@ -40,7 +40,7 @@ class AnnouncementServiceTest {
     @Test
     void rejectsTargetedAnnouncementWithoutRuleValue() {
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> service.create(
-                new AnnouncementDtos.CreateRequest("Notice", "Content", AudienceType.ROLE, "  "), UUID.randomUUID()));
+                new AnnouncementDtos.CreateRequest("Notice", "Content", AudienceType.ROLE, "  "), "usr-organizer-001"));
 
         assertEquals(400, exception.getStatusCode().value());
         verifyNoInteractions(repository);

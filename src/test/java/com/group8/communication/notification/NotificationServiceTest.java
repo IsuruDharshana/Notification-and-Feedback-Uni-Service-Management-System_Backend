@@ -95,7 +95,7 @@ class NotificationServiceTest {
     void findMineUsesUnreadRepositoryAndNewestFirstOrdering() {
         String recipientId = "usr-student-001";
         Notification notification = new Notification(recipientId, NotificationType.EVENT_UPDATED, "Unread",
-                RelatedType.EVENT, null, "event-service", "event-001-updated");
+                RelatedType.EVENT, (String) null, "event-service", "event-001-updated");
         when(repository.findByRecipientIdAndReadFalse(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(notification)));
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
@@ -129,7 +129,7 @@ class NotificationServiceTest {
     @Test
     void markReadRejectsNotificationOwnedByAnotherUser() {
         Notification notification = new Notification("usr-student-002", NotificationType.EVENT_UPDATED, "Private",
-                RelatedType.ANNOUNCEMENT, null, "event-service", "announcement-001-updated");
+                RelatedType.ANNOUNCEMENT, (String) null, "event-service", "announcement-001-updated");
         when(repository.findById(notification.getId())).thenReturn(Optional.of(notification));
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
