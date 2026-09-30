@@ -29,6 +29,11 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
     @Bean
+    ObjectMapper jwtHeaderObjectMapper() {
+        return new ObjectMapper();
+    }
+
+    @Bean
     SecurityFilterChain filterChain(HttpSecurity http, JwtFilter jwt) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
