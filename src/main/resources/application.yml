@@ -26,7 +26,6 @@ notification:
 
 user-directory:
   base-url: ${USER_DIRECTORY_BASE_URL:}
-  user-path: ${USER_DIRECTORY_USER_PATH:/api/v1/validation/users/{userId}}
   eligibility-path: ${USER_DIRECTORY_ELIGIBILITY_PATH:/api/v1/validation/users/{userId}/eligibility}
   required-role: ${USER_DIRECTORY_REQUIRED_ROLE:}
   access-token: ${USER_DIRECTORY_ACCESS_TOKEN:}
@@ -37,7 +36,11 @@ facility-directory:
 
 group7-feedback:
   base-url: ${GROUP7_FEEDBACK_BASE_URL:}
-  eligibility-path: ${GROUP7_FEEDBACK_ELIGIBILITY_PATH:/api/work-orders/by-request/{activityId}}
+  eligibility-path: ${GROUP7_FEEDBACK_ELIGIBILITY_PATH:/api/work-orders/by-request/{requestId}}
+
+event-service:
+  base-url: ${EVENT_SERVICE_BASE_URL:}
+  registrations-path: ${EVENT_SERVICE_REGISTRATIONS_PATH:/api/registrations/mine}
 
 management:
   endpoints:
