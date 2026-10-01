@@ -23,5 +23,5 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Run unit tests
-        run: mvn -B -s .mvn-settings.xml test
+      - name: Run tests (including Swagger HTTP checks) and package
+        run: mvn -B -s .mvn-settings.xml verify

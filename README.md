@@ -6,7 +6,7 @@ documented APIs and identifiers; they must not read this database directly.
 
 ## APIs
 
-- `GET /api/notifications?unreadOnly=false&page=0&size=10` with `Authorization: Bearer <JWT>`; JWT subject must be the user UUID.
+- `GET /api/notifications?unreadOnly=false&page=0&size=10` with `Authorization: Bearer <JWT>`; JWT subject must be the Group 5 user id, for example `usr-student-001` (not a UUID).
 - `PATCH /api/notifications/{id}/read` with a user JWT.
 - `POST /api/notifications/trigger` with `X-Service-Key`, for example from event-service when an event is cancelled. The trigger contract uses `recipientId` (Group 5 string ID), `type`, `message`, `relatedType`, `relatedId`, `sourceService`, and `idempotencyKey`.
 - `POST /api/announcements`, `POST /api/announcements/{id}/publish`, and `GET /api/announcements` with a user JWT.
@@ -15,8 +15,39 @@ documented APIs and identifiers; they must not read this database directly.
 
 The trigger contract is `{ "recipientId": "usr-student-001", "type": "EVENT_CANCELLED", "message": "Your event has been cancelled.", "relatedType": "EVENT", "relatedId": "event-123", "sourceService": "event-service", "idempotencyKey": "event-123-cancelled" }`. Supported trigger types also include `RESERVATION_STATUS` and `SERVICE_REQUEST_STATUS`.
 
-The notification contract, request examples, response schemas, and error
-responses are documented in `src/main/resources/openapi/notification-api.yaml`.
+## Swagger / OpenAPI documentation
+
+After starting the application, open:
+
+| Documentation | Local URL (default port) |
+| --- | --- |
+| Interactive Swagger UI | <http://localhost:8082/swagger-ui.html> |
+| OpenAPI JSON (also importable into Postman) | <http://localhost:8082/v3/api-docs> |
+| OpenAPI YAML | <http://localhost:8082/v3/api-docs.yaml> |
+
+For Render, use the same paths on your deployed service URL. For example, after
+deploying this version: <https://notification-and-feedback-uni-service.onrender.com/swagger-ui.html>.
+No additional environment variables are required for Swagger. The normal
+database/service configuration is still required to start the application.
+
+All 13 operations across notifications, announcements, feedback and engagement
+are generated from the controllers and DTOs, including field limits, examples,
+role/ownership requirements and response codes. The UI and specification are
+publicly readable; this does **not** remove authentication from business APIs.
+
+Click **Authorize** in Swagger UI:
+
+- `bearerAuth`: a current Group 5 access token, without the `Bearer ` prefix, for user endpoints.
+- `serviceKey`: the private `NOTIFICATIONS_SERVICE_KEY` value, for `POST /api/notifications/trigger`.
+
+Never put real credentials in the specification or commit them. Swagger does not
+persist authorization across page reloads. **Try it out** executes real requests;
+POST/PATCH requests can change data. Use a test environment and test records.
+
+See [the Swagger testing guide](docs/swagger-api-guide.md) for examples and
+permissions. The portable, hand-maintained contract remains at
+`src/main/resources/openapi/notification-api.yaml`; the running service's generated
+`/v3/api-docs` is the authoritative documentation for that deployed version.
 
 Announcement targeting supports `ALL`, `ROLE`, `DEPARTMENT`, `FACULTY`, and
 `SERVICE_UNIT`. Published announcements now use the authenticated user's Group 5
@@ -57,8 +88,13 @@ The engagement summary reports communication-feedback-owned metrics. Event parti
 
 ## Verification
 
-Run `mvn -s .mvn-settings.xml test` locally. GitHub Actions runs the same test
-command for pushes to `main`/`master` and for pull requests.
+Run `mvn -B -s .mvn-settings.xml verify` locally to run tests and package the
+application. GitHub Actions runs tests for pushes to `main`/`master` and pull requests.
+
+`OpenApiDocumentationTest` starts the real HTTP server with mocked repositories
+and no database or live service credentials. It verifies Swagger assets, JSON and
+YAML generation, coverage of every controller operation, schema references and
+constraints, and that protected APIs still reject unauthenticated requests.
 
 ## Run with Docker
 

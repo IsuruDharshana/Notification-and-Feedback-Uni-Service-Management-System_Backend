@@ -52,3 +52,16 @@ management:
       probes:
         enabled: true
       show-details: never
+
+springdoc:
+  paths-to-match: /api/**
+  override-with-generic-response: false
+  api-docs:
+    version: OPENAPI_3_0
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    persist-authorization: false
+    tags-sorter: alpha
+    operations-sorter: alpha
+    validator-url: ""

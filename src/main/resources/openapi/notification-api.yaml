@@ -1,10 +1,13 @@
 openapi: 3.0.3
 info:
-  title: Group 8 Notification API
+  title: Group 8 Communication and Feedback API
   version: 1.0.0
   description: |
-    Contract used by event-service, reservation-service, and service-request-service
-    to create in-application notifications after their own state change commits.
+    Portable contract for in-app notifications, announcements, feedback and engagement.
+    The running service also generates documentation from controllers at /v3/api-docs
+    and /v3/api-docs.yaml, with interactive documentation at /swagger-ui.html.
+    User operations require a Group 5 RS256 token; trusted triggers use X-Service-Key.
+    Notification creation stores an inbox record, not an email or SMS.
 servers:
   - url: /
 paths:
@@ -68,16 +71,15 @@ paths:
   /api/notifications/trigger:
     post:
       summary: Create a notification from a trusted service workflow
+      description: |
+        New idempotency keys create a record. Repeated keys return the original record
+        even when the new payload differs. Use one distinct key per recipient and event.
+        Directory verification requires a configured URL and credential. Missing settings
+        or Group 5 401/403 responses allow the trusted caller to create an unverified
+        recipient notification and log a warning; other provider failures return 503.
       operationId: triggerNotification
       security:
         - serviceKey: []
-      parameters:
-        - name: X-Service-Key
-          in: header
-          required: true
-          description: Shared secret for trusted service-to-service calls.
-          schema:
-            type: string
       requestBody:
         required: true
         content:
@@ -85,15 +87,15 @@ paths:
             schema:
               $ref: '#/components/schemas/NotificationTriggerRequest'
             examples:
-              reservationApproved:
+              eventCancelled:
                 value:
                   recipientId: usr-student-001
-                  type: REGISTRATION_CONFIRMED
-                  message: Reservation approved for Lab B-204.
-                  relatedType: REGISTRATION
-                  relatedId: 00000000-0000-0000-0000-000000000002
+                  type: EVENT_CANCELLED
+                  message: Your event has been cancelled.
+                  relatedType: EVENT
+                  relatedId: event-123
                   sourceService: event-service
-                  idempotencyKey: event-registration-001-confirmed
+                  idempotencyKey: event-123-cancelled-usr-student-001
       responses:
         '201':
           description: Notification created.
@@ -114,11 +116,12 @@ paths:
         '404':
           description: Recipient does not exist in the Group 5 directory.
         '503':
-          description: Group 5 recipient directory is not configured or unavailable.
+          description: Group 5 recipient directory is unavailable or returned invalid data.
 
   /api/announcements:
     get:
-      summary: List published announcements visible to the supplied audience context
+      summary: List published announcements visible to the authenticated user
+      description: Falls back to ALL and JWT ROLE audiences if Group 5 is unconfigured or unavailable.
       operationId: listVisibleAnnouncements
       security:
         - bearerAuth: []
@@ -135,10 +138,9 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           description: Authenticated user was not found in Group 5 directory.
-        '503':
-          description: Group 5 directory is not configured or unavailable.
     post:
       summary: Create an announcement draft
+      description: Requires ADMIN or ADMINISTRATIVE_STAFF. ALL omits ruleValue; other audiences require it.
       operationId: createAnnouncement
       security:
         - bearerAuth: []
@@ -157,12 +159,15 @@ paths:
                 $ref: '#/components/schemas/Announcement'
         '400':
           description: Invalid announcement or targeting rule.
+        '403':
+          description: Requires ADMIN or ADMINISTRATIVE_STAFF.
         '401':
           $ref: '#/components/responses/Unauthorized'
 
   /api/announcements/{id}/publish:
     post:
       summary: Publish an announcement draft
+      description: Requires ADMIN or ADMINISTRATIVE_STAFF and ownership of the draft.
       operationId: publishAnnouncement
       security:
         - bearerAuth: []
@@ -187,6 +192,7 @@ paths:
   /api/announcements/{id}/archive:
     post:
       summary: Archive a published announcement
+      description: Requires ADMIN or ADMINISTRATIVE_STAFF and ownership of the announcement.
       operationId: archiveAnnouncement
       security:
         - bearerAuth: []
@@ -223,8 +229,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/FeedbackForm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
       summary: Create a feedback form for an event or service request
+      description: Requires EVENT_ORGANIZER, ACADEMIC_STAFF, ADMINISTRATIVE_STAFF or ADMIN.
       operationId: createFeedbackForm
       security:
         - bearerAuth: []
@@ -243,6 +252,10 @@ paths:
                 $ref: '#/components/schemas/FeedbackForm'
         '400':
           description: Invalid feedback form.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: The authenticated user does not have a form-creation role.
         '409':
           description: A form already exists for the activity.
 
@@ -261,12 +274,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FeedbackForm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           description: Feedback form was not found.
 
   /api/feedback/forms/{formId}/responses:
     get:
       summary: List responses for a feedback form
+      description: Only the form creator can read responses.
       operationId: listFeedbackResponses
       security:
         - bearerAuth: []
@@ -281,10 +297,18 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/FeedbackResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: The authenticated user did not create the form.
         '404':
           description: Feedback form was not found.
     post:
       summary: Submit one response to a feedback form
+      description: |
+        Requires an active form and an eligible caller. Group 7 service requests must be
+        RESOLVED or CLOSED and owned by the caller. Event feedback needs a CONFIRMED
+        registration. A blank provider base URL skips its check for development only.
       operationId: submitFeedbackResponse
       security:
         - bearerAuth: []
@@ -305,6 +329,8 @@ paths:
                 $ref: '#/components/schemas/FeedbackResponse'
         '400':
           description: Rating or response data is invalid.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '403':
           description: The user is not eligible to submit feedback.
         '404':
@@ -312,7 +338,7 @@ paths:
         '409':
           description: Form is inactive or the user already submitted a response.
         '503':
-          description: Group 7 feedback-eligibility service is unavailable or returned an invalid response.
+          description: Group 7 or event-service eligibility provider is unavailable or returned invalid data.
 
   /api/engagement-dashboard/summary:
     get:
@@ -383,6 +409,7 @@ components:
       properties:
         recipientId:
           type: string
+          minLength: 1
           maxLength: 64
           example: usr-student-001
         type:
@@ -390,17 +417,21 @@ components:
         message:
           type: string
           minLength: 1
+          maxLength: 2000
         relatedType:
           $ref: '#/components/schemas/RelatedType'
         relatedId:
           type: string
           maxLength: 128
           nullable: true
+          description: External string id; required unless relatedType is EXTERNAL.
         sourceService:
           type: string
+          minLength: 1
           maxLength: 64
         idempotencyKey:
           type: string
+          minLength: 1
           maxLength: 200
 
     Notification:
@@ -579,6 +610,9 @@ components:
           maxLength: 200
         questionsJson:
           type: string
+          minLength: 1
+          maxLength: 20000
+          description: JSON question definition encoded as a string, not an array property.
 
     FeedbackForm:
       type: object
